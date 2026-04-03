@@ -3,11 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { RefreshCw, X, Zap } from 'lucide-react';
 
 function ReloadPrompt() {
-  const {
-    offlineReady: [offlineReady, setOfflineReady],
-    needUpdate: [needUpdate, setNeedUpdate],
-    updateServiceWorker,
-  } = useRegisterSW({
+  const registerSW = useRegisterSW({
     onRegistered(r) {
       console.log('SW Registered: ' + r);
     },
@@ -15,6 +11,15 @@ function ReloadPrompt() {
       console.log('SW registration error', error);
     },
   });
+
+  if (!registerSW) return null;
+
+  const offlineReadyArr = registerSW.offlineReady || [false, () => {}];
+  const needUpdateArr = registerSW.needUpdate || [false, () => {}];
+  const updateServiceWorker = registerSW.updateServiceWorker || (() => {});
+
+  const [offlineReady, setOfflineReady] = offlineReadyArr;
+  const [needUpdate, setNeedUpdate] = needUpdateArr;
 
   const close = () => {
     setOfflineReady(false);
