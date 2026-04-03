@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import LoginPage from "../Pages/LoginPage";
+import ReloadPrompt from "../Components/ReloadPrompt";
 
 export default function WebWrapper() {
   const { loca } = AppProperties;
@@ -75,6 +76,7 @@ export default function WebWrapper() {
   return (
     <WorkshopContext.Provider value={{ ...AppProperties, user, setUser, logout }}>
       <Toaster position="top-center" reverseOrder={false} />
+      <ReloadPrompt />
       
       <div className="d-flex" style={{ height: "100vh", overflow: "hidden" }}>
         
