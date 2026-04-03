@@ -193,25 +193,25 @@ export default function Dashboard() {
 
       {/* ALERTS / NOTIFICATIONS */}
       {upcomingCollections.length > 0 && (
-        <div className="alert border-0 border-indigo border-start border-4 shadow-sm mb-5 d-flex align-items-center justify-content-between bg-white" style={{ borderRadius: '12px' }}>
-          <div className="d-flex align-items-center gap-4">
-            <div className="bg-indigo-50 p-3 rounded-4">
-              <Zap className="text-indigo-600" size={28} />
+        <div className="alert border-0 border-indigo border-start border-4 shadow-sm mb-5 d-flex flex-column flex-md-row align-items-center justify-content-between bg-white" style={{ borderRadius: '12px' }}>
+          <div className="d-flex align-items-center gap-3 gap-md-4 mb-3 mb-md-0">
+            <div className="bg-indigo-50 p-2 p-md-3 rounded-4">
+              <Zap className="text-indigo-600" size={24} />
             </div>
             <div>
-              <h5 className="fw-bold mb-1 text-dark">Weekly Strategy: Upcoming Stock Collections</h5>
-              <p className="mb-2 text-muted small">The following suppliers are scheduled for collection within the next 7 days:</p>
+              <h5 className="fw-bold mb-1 text-dark smaller-md">Weekly Strategy: Upcoming Stock Collections</h5>
+              <p className="mb-2 text-muted smaller opacity-75">Scheduled for collection within the next 7 days:</p>
               <div className="d-flex flex-wrap gap-2">
                 {upcomingCollections.map(s => (
-                  <div key={s.id} className="badge bg-light text-dark border px-3 py-2 rounded-pill d-flex align-items-center gap-2">
+                  <div key={s.id} className="badge bg-light text-dark border px-2 px-md-3 py-2 rounded-pill d-flex align-items-center gap-2">
                     <span className={`p-1 rounded-circle ${s.collectionDate === todayDay ? 'bg-danger' : 'bg-success'}`} style={{ width: 8, height: 8 }}></span>
-                    {s.name} <span className="text-muted fw-normal">• Day {s.collectionDate}</span>
+                    <span className="smaller">{s.name}</span> <span className="text-muted fw-normal smaller-xs">Day {s.collectionDate}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          <button className="btn btn-dark btn-sm fw-bold px-4 py-2 d-none d-md-flex align-items-center gap-2 shadow-sm rounded-pill" onClick={() => navigate('/accounts')}>
+          <button className="btn btn-dark btn-sm fw-bold px-4 py-2 w-100 w-md-auto d-flex align-items-center justify-content-center gap-2 shadow-sm rounded-pill" onClick={() => navigate('/accounts')}>
             Manage Procurement <ArrowRight size={16} />
           </button>
         </div>

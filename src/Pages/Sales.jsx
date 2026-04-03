@@ -191,16 +191,17 @@ function Sales() {
 
   return (
     <div className="container py-4 mt-2">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h2 className="fw-bold m-0 text-success">Outbound Sales logs</h2>
+          <h2 className="fw-bold m-0 text-success">Outbound Sales Logs</h2>
           <small className="text-muted">Register shipments sent to customers</small>
         </div>
-        <div className="d-flex align-items-center gap-2">
-          <label className="fw-bold text-muted small">Sales Month:</label>
+        <div className="d-flex align-items-center gap-2 bg-white px-3 py-2 rounded-4 shadow-sm border border-success border-opacity-10">
+          <label className="fw-bold text-muted small text-nowrap">Sales Month:</label>
           <input
             type="month"
-            className="form-control border-success fw-bold"
+            className="form-control border-0 bg-transparent fw-bold p-0"
+            style={{ width: '130px', boxShadow: 'none' }}
             value={recordMonth}
             onChange={(e) => setRecordMonth(e.target.value)}
           />

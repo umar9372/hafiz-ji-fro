@@ -77,7 +77,7 @@ export default function InventoryPage() {
   return (
     <div className="warehouse-prime-dashboard">
       {/* PRIME ASSET HEADER */}
-      <div className="d-flex justify-content-between align-items-end mb-5">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-4 mb-5">
         <div>
           <div className="d-flex align-items-center gap-2 mb-1">
              <div className="prime-accent-dot ripple-pulse"></div>
@@ -86,9 +86,9 @@ export default function InventoryPage() {
           <h1 className="display-6 fw-black text-slate-900 tracking-tightest m-0">Warehouse Assets</h1>
           <p className="text-slate-400 fw-medium m-0">Institutional inventory management & real-time valuation.</p>
         </div>
-        <div className="text-end">
-           <div className="asset-pulse-box p-4 bg-white border-0 shadow-premium rounded-4 d-inline-block">
-              <div className="d-flex align-items-center gap-4">
+        <div className="text-md-end w-100 w-md-auto">
+           <div className="asset-pulse-box p-3 p-md-4 bg-white border-0 shadow-premium rounded-4 d-block d-md-inline-block">
+              <div className="d-flex align-items-center justify-content-between justify-content-md-center gap-4">
                  <div className="text-start">
                     <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Portfolio Value</div>
                     <div className="h2 fw-black text-indigo-600 m-0 ls-tight">₹{totalWorth.toLocaleString('en-IN')}</div>
@@ -146,40 +146,40 @@ export default function InventoryPage() {
               
               return (
                 <div key={item.materialId} className="col-12" onClick={() => fetchMaterialHistory(item.materialId, item.materialName, item.materialNameHindi)}>
-                   <div className="asset-card-horizontal bg-white p-4 rounded-4 shadow-premium border-0 position-relative overflow-hidden hover-rise pointer">
-                      <div className="row align-items-center">
-                         <div className="col-md-3 border-end">
-                            <div className="d-flex align-items-center gap-3">
-                               <div className={`asset-status-indicator ${weight > 0 ? 'bg-success' : 'bg-slate-300'}`}></div>
-                               <div>
-                                  <h4 className="fw-black text-slate-900 m-0 text-capitalize ls-tight">{item.materialName}</h4>
-                                  <div className="d-flex align-items-center gap-2">
-                                     <span className="text-slate-400 smaller fw-bold">{item.materialNameHindi || "REGULAR"}</span>
-                                     <span className="badge-prime px-2">ID_{item.materialId}</span>
-                                  </div>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="col-md-2 text-center border-end">
-                            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Market Rate</div>
-                            <div className="h5 fw-black text-slate-900 m-0">₹{rate.toLocaleString('en-IN')}</div>
-                            <div className="smaller text-slate-300 fw-bold">Per Kilogram</div>
-                         </div>
-                         <div className="col-md-3 text-center border-end">
-                            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Current Balance</div>
-                            <div className="h2 fw-black text-slate-900 m-0 tracking-tightest">{weight.toLocaleString()} <small className="text-slate-400 fw-medium h6">kg</small></div>
-                         </div>
-                         <div className="col-md-3 text-center">
-                            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Calculated Worth</div>
-                            <div className="h3 fw-black text-indigo-600 m-0">₹{Math.floor(value).toLocaleString('en-IN')}</div>
-                         </div>
-                         <div className="col-md-1 text-end">
-                            <div className="bg-slate-50 p-2 rounded-circle text-slate-400 d-inline-block hover-indigo transition-all">
-                               <ArrowRight size={20} />
-                            </div>
-                         </div>
-                      </div>
-                   </div>
+                    <div className="asset-card-horizontal bg-white p-3 p-md-4 rounded-4 shadow-premium border-0 position-relative overflow-hidden hover-rise pointer">
+                       <div className="row g-3 align-items-center">
+                          <div className="col-12 col-md-3 border-end-md pb-2 pb-md-0">
+                             <div className="d-flex align-items-center gap-3">
+                                <div className={`asset-status-indicator ${weight > 0 ? 'bg-success' : 'bg-slate-300'}`}></div>
+                                <div>
+                                   <h5 className="fw-black text-slate-900 m-0 text-capitalize ls-tight">{item.materialName}</h5>
+                                   <div className="d-flex align-items-center gap-2">
+                                      <span className="text-slate-400 smaller fw-bold">{item.materialNameHindi || "REGULAR"}</span>
+                                      <span className="badge-prime px-2">ID_{item.materialId}</span>
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+                          <div className="col-6 col-md-2 text-md-center border-end-md py-1 py-md-0">
+                             <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Market Rate</div>
+                             <div className="fw-black text-slate-900 m-0">₹{rate.toLocaleString('en-IN')}</div>
+                             <div className="smaller text-slate-300 fw-bold">Per Kilogram</div>
+                          </div>
+                          <div className="col-6 col-md-3 text-end text-md-center border-end-md py-1 py-md-0">
+                             <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Current Balance</div>
+                             <div className="h4 fw-black text-slate-900 m-0 tracking-tightest">{weight.toLocaleString()} <small className="text-slate-400 fw-medium smaller">kg</small></div>
+                          </div>
+                          <div className="col-12 col-md-3 text-center text-md-center py-2 py-md-0 bg-light bg-opacity-10 rounded-3">
+                             <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Calculated Worth</div>
+                             <div className="h4 fw-black text-indigo-600 m-0">₹{Math.floor(value).toLocaleString('en-IN')}</div>
+                          </div>
+                          <div className="col-12 col-md-1 text-end d-none d-md-block">
+                             <div className="bg-slate-50 p-2 rounded-circle text-slate-400 d-inline-block hover-indigo transition-all">
+                                <ArrowRight size={20} />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
                 </div>
               );
            })}

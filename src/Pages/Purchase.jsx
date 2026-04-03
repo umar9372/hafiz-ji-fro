@@ -190,16 +190,17 @@ function Purchase() {
 
   return (
     <div className="container py-4 mt-2">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h2 className="fw-bold m-0 text-danger">Inventory Intake logs</h2>
+          <h2 className="fw-bold m-0 text-danger">Inventory Intake Logs</h2>
           <small className="text-muted">Register material receipts from suppliers</small>
         </div>
-        <div className="d-flex align-items-center gap-2">
-          <label className="fw-bold text-muted small">Billing Month:</label>
+        <div className="d-flex align-items-center gap-2 bg-white px-3 py-2 rounded-4 shadow-sm border border-danger border-opacity-10">
+          <label className="fw-bold text-muted small text-nowrap">Billing Month:</label>
           <input
             type="month"
-            className="form-control border-danger fw-bold"
+            className="form-control border-0 bg-transparent fw-bold p-0"
+            style={{ width: '130px', boxShadow: 'none' }}
             value={recordMonth}
             onChange={(e) => setRecordMonth(e.target.value)}
           />
@@ -210,9 +211,9 @@ function Purchase() {
       <div className="card shadow-sm mb-4 border-0 border-top border-4 border-danger">
         <div className="card-body">
           <div className="row align-items-center">
-            <div className="col-md-5">
+            <div className="col-md-5 mb-3 mb-md-0">
               <label className="form-label fw-bold text-muted small text-uppercase">Supplier / Vendor Account</label>
-              <select className="form-select border-danger bg-light fw-bold" value={selectedSupplierId} onChange={handleSupplierChange}>
+              <select className="form-select border-danger bg-light fw-bold py-2" value={selectedSupplierId} onChange={handleSupplierChange}>
                 <option value="">-- Select Active Account --</option>
                 {suppliers.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
@@ -220,15 +221,15 @@ function Purchase() {
               </select>
             </div>
             {supplierDetails && (
-              <div className="col-md-7 border-start ps-4">
-                <div className="d-flex justify-content-between align-items-start">
+              <div className="col-md-7 border-start-md ps-md-4">
+                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start gap-3">
                   <div>
                     <h5 className="fw-bold m-0">{supplierDetails.supplierName}</h5>
                     <small className="text-muted d-block">{supplierDetails.address || "No Address"}</small>
                     <small className="badge bg-light text-dark border mt-1">{supplierDetails.mobile || "No Contact"}</small>
                   </div>
-                  <div className="text-end">
-                    <small className="text-muted d-block">Monthly Total</small>
+                  <div className="text-sm-end bg-danger bg-opacity-10 p-2 rounded-3">
+                    <small className="text-muted d-block smaller">Monthly Total</small>
                     <h4 className="fw-bold text-danger m-0">₹{supplierPurchases.filter(p => p.recordMonth === recordMonth).reduce((a, c) => a + c.amount, 0).toLocaleString()}</h4>
                   </div>
                 </div>
