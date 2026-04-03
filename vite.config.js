@@ -7,25 +7,34 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      filename: 'manifest.json',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
         name: 'Hafiz JI Accounts',
         short_name: 'Hafiz JI',
         description: 'Store, Supplier, and Sales Management Tool',
-        theme_color: '#ffffff',
+        theme_color: '#198754',
         background_color: '#ffffff',
         display: 'standalone',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
-            src: '/logo.png', // Uses the public/logo.png you have!
+            src: '/logo.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: '/logo.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
+      },
+      devOptions: {
+        enabled: true
       }
     })
   ],

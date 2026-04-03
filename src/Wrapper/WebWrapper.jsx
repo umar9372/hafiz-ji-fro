@@ -16,7 +16,8 @@ import {
   History,
   Menu,
   X,
-  LogIn
+  LogIn,
+  Zap
 } from "lucide-react";
 
 import LoginPage from "../Pages/LoginPage";
@@ -46,6 +47,7 @@ export default function WebWrapper() {
     { name: "Overview", path: "/", icon: <LayoutDashboard size={18} /> },
     { name: "Warehouse", path: "/inventory", icon: <PackageSearch size={18} /> },
     { name: "Intake", path: "/purchase", icon: <ShoppingCart size={18} /> },
+    { name: "Production", path: "/production", icon: <Zap size={18} /> },
     { name: "Sales", path: "/sales", icon: <TrendingUp size={18} /> },
     { name: "Clients", path: "/accounts", icon: <Users size={18} /> },
     { name: "Materials", path: "/materials", icon: <Box size={18} /> },

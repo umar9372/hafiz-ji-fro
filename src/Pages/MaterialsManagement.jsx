@@ -10,11 +10,13 @@ export default function MaterialsManagement() {
 
   const [materials, setMaterials] = useState([]);
   const [name, setName] = useState("");
+  const [nameHindi, setNameHindi] = useState("");
   const [defaultRate, setDefaultRate] = useState("");
   const [loading, setLoading] = useState(false);
   
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [editNameHindi, setEditNameHindi] = useState("");
   const [editRate, setEditRate] = useState("");
   const [deleteId, setDeleteId] = useState(null);
 
@@ -39,11 +41,13 @@ export default function MaterialsManagement() {
     try {
       await axios.post(`${loca}/materials`, {
         name: name.toLowerCase(),
+        nameHindi: nameHindi,
         defaultRate: parseInt(defaultRate),
         userName: user?.username || "system"
       });
       toast.success("Material added successfully!");
       setName("");
+      setNameHindi("");
       setDefaultRate("");
       fetchMaterials();
     } catch (err) {
@@ -56,12 +60,14 @@ export default function MaterialsManagement() {
   const handleStartEdit = (m) => {
     setEditingId(m.id);
     setEditName(m.name);
+    setEditNameHindi(m.nameHindi || "");
     setEditRate(m.defaultRate);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditName("");
+    setEditNameHindi("");
     setEditRate("");
   };
 
@@ -69,6 +75,7 @@ export default function MaterialsManagement() {
     try {
       await axios.put(`${loca}/materials/${id}`, {
         name: editName.toLowerCase(),
+        nameHindi: editNameHindi,
         defaultRate: parseInt(editRate),
         userName: user?.username || "system"
       });
@@ -125,6 +132,16 @@ export default function MaterialsManagement() {
                     required
                   />
                 </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted uppercase tracking-wider">Hindi Name (e.g. ताँबा)</label>
+                  <input
+                    type="text"
+                    className="form-control border-secondary shadow-sm"
+                    value={nameHindi}
+                    onChange={(e) => setNameHindi(e.target.value)}
+                    placeholder="वैकल्पिक"
+                  />
+                </div>
                 <div className="mb-4">
                   <label className="form-label small fw-bold text-muted uppercase tracking-wider">Global Default Rate (₹/kg)</label>
                   <div className="input-group shadow-sm">
@@ -178,14 +195,27 @@ export default function MaterialsManagement() {
                         <td className="ps-4 text-muted small">#{index + 1}</td>
                         <td>
                           {editingId === m.id ? (
-                            <input 
-                              type="text" 
-                              className="form-control form-control-sm border-primary" 
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                            />
+                            <div className="d-flex flex-column gap-1">
+                                <input 
+                                  type="text" 
+                                  className="form-control form-control-sm border-primary" 
+                                  value={editName}
+                                  placeholder="English Name"
+                                  onChange={(e) => setEditName(e.target.value)}
+                                />
+                                <input 
+                                  type="text" 
+                                  className="form-control form-control-sm border-primary" 
+                                  value={editNameHindi}
+                                  placeholder="Hindi Name (Optional)"
+                                  onChange={(e) => setEditNameHindi(e.target.value)}
+                                />
+                            </div>
                           ) : (
-                            <div className="fw-bold text-capitalize text-dark fs-6">{m.name}</div>
+                            <div>
+                                <div className="fw-bold text-capitalize text-dark fs-6">{m.name}</div>
+                                {m.nameHindi && <div className="text-secondary small">{m.nameHindi}</div>}
+                            </div>
                           )}
                         </td>
                         <td className="text-center">

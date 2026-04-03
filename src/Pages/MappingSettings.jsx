@@ -19,7 +19,6 @@ export default function MappingSettings() {
   useEffect(() => {
     setSelectedEntityId("");
     setMaterialsData([]);
-    setMessage("");
     if (mappingType === "SUPPLIERS") {
       fetchSuppliers();
     } else {

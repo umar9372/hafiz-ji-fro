@@ -13,6 +13,7 @@ export default function BillDetails() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [partner, setPartner] = useState(null);
+  const [showRates, setShowRates] = useState(true);
 
   const printRef = useRef();
 
@@ -67,22 +68,50 @@ export default function BillDetails() {
   const handleDownloadPDF = async () => {
     const toastId = toast.loading("Preparing PDF...");
     try {
+      window.scrollTo(0, 0);
       const element = printRef.current;
-      // Temporarily hide elements with d-print-none during capture or handle it in html2canvas options
-      // html2canvas doesn't automatically respect d-print-none, so we define a custom scale and options
+      
+      // Force element to be full size and visible
+      const originalStyle = element.style.overflow;
+      element.style.overflow = 'visible';
+      
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
+        windowWidth: 1200, // Force a desktop-width layout for the capture
+        onclone: (clonedDoc) => {
+          // Ensure all responsive tables are visible in the clone
+          const tables = clonedDoc.querySelectorAll('.table-responsive');
+          tables.forEach(t => t.style.overflow = 'visible');
+        },
         ignoreElements: (el) => el.classList.contains('d-print-none')
       });
+      
+      element.style.overflow = originalStyle;
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let heightLeft = pdfHeight;
+      let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+
+      // Add subsequent pages if content is longer than A4
+      while (heightLeft > 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+
       pdf.save(`Invoice_${month}_${partner?.name?.replace(/\s+/g, '_')}.pdf`);
       toast.success("PDF Downloaded!", { id: toastId });
     } catch (err) {
@@ -94,13 +123,26 @@ export default function BillDetails() {
   const handleDownloadImage = async () => {
     const toastId = toast.loading("Preparing Image...");
     try {
+      window.scrollTo(0, 0);
       const element = printRef.current;
+      
+      const originalStyle = element.style.overflow;
+      element.style.overflow = 'visible';
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
+        windowWidth: 1200,
+        onclone: (clonedDoc) => {
+          const tables = clonedDoc.querySelectorAll('.table-responsive');
+          tables.forEach(t => t.style.overflow = 'visible');
+        },
         ignoreElements: (el) => el.classList.contains('d-print-none')
       });
+
+      element.style.overflow = originalStyle;
+
       const imgData = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = imgData;
@@ -137,136 +179,184 @@ export default function BillDetails() {
         <Link to={`/${type}`} className="btn btn-outline-secondary d-flex align-items-center gap-2">
           <ArrowLeft size={18} /> Back to {type === "purchase" ? "Intake" : "Sales"}
         </Link>
-        <div className="d-flex gap-2 flex-wrap justify-content-end">
-          <button className="btn btn-primary d-flex align-items-center gap-2" onClick={handleDownloadPDF}>
+        <div className="d-flex gap-2 flex-wrap justify-content-end align-items-center">
+          <div className="form-check form-switch me-3 d-flex align-items-center gap-2">
+            <input 
+              className="form-check-input cursor-pointer" 
+              type="checkbox" 
+              id="showRatesToggle" 
+              checked={showRates} 
+              onChange={() => setShowRates(!showRates)} 
+              style={{ width: '40px', height: '20px' }}
+            />
+            <label className="form-check-label small fw-bold text-dark cursor-pointer" htmlFor="showRatesToggle">
+               Show Rates on Bill
+            </label>
+          </div>
+          <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm" onClick={handleDownloadPDF}>
             <Download size={16} /> <span className="d-none d-sm-inline">PDF</span>
           </button>
-          <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={handleDownloadImage}>
+          <button className="btn btn-outline-primary d-flex align-items-center gap-2 shadow-sm" onClick={handleDownloadImage}>
             <ImageIcon size={16} /> <span className="d-none d-sm-inline">Image</span>
           </button>
         </div>
       </div>
 
       {/* BILL DOCUMENT */}
-      <div className="card shadow-lg border-0 mb-5 overflow-hidden" ref={printRef}>
-        {/* Banner */}
-        <div className={`py-2 ${type === "purchase" ? "bg-danger" : "bg-success"}`}></div>
-
+      <div className="card shadow-sm border border-light mb-5 bg-white overflow-hidden" ref={printRef} style={{ borderRadius: '0' }}>
+        
         <div className="card-body p-5">
-          {/* Logo & Bill Header */}
-          <div className="row mb-5 pb-4 border-bottom">
-            <div className="col-sm-6">
-              <div className="d-flex align-items-center gap-3 mb-2">
-                <div className={`p-2 rounded bg-dark text-white`}>
-                  <Receipt size={32} />
-                </div>
-                <h2 className="fw-bold m-0 text-dark">HAFIZ JI</h2>
+          {/* Executive Letterhead Header */}
+          <div className="row mb-5 pb-4 border-bottom border-2">
+            <div className="col-8">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                 <h1 className="fw-black m-0 tracking-tighter text-slate-900" style={{ fontSize: '2.5rem', letterSpacing: '-2px' }}>HAFIZ JI</h1>
               </div>
-              <p className="text-muted small">
-                <strong>Address:</strong> Jabbar compound, near usman gani masjid bhiwandi. <br />
-                <strong>Contact:</strong> +91 9850841012
-              </p>
-            </div>
-            <div className="col-sm-6 text-sm-end">
-              <h1 className="fw-bold text-muted opacity-50 text-uppercase mb-0"> {type === "purchase" ? "Purchase Bill" : "Sales Invoice"}</h1>
-              <div className="mt-2">
-                <div className="fw-bold text-dark">Ref No: #{type.toUpperCase().substring(0, 2)}-{month.replace('-', '')}-{id}</div>
-                <div className="text-muted small">Date: {new Date().toLocaleDateString()}</div>
-                <div className="dropdown mt-2 d-print-none">
-                  <button className={`btn btn-sm dropdown-toggle fw-bold ${records[0]?.status === 'PAID' ? 'btn-success' : records[0]?.status === 'PARTIAL' ? 'btn-warning' : 'btn-outline-danger'}`} type="button" data-bs-toggle="dropdown">
-                    Status: {records[0]?.status || "PENDING"}
-                  </button>
-                  <ul className="dropdown-menu shadow">
-                    <li><button className="dropdown-item fw-bold text-danger" onClick={() => updateStatus('PENDING')}>PENDING</button></li>
-                    <li><button className="dropdown-item fw-bold text-warning" onClick={() => updateStatus('PARTIAL')}>PARTIAL</button></li>
-                    <li><button className="dropdown-item fw-bold text-success" onClick={() => updateStatus('PAID')}>PAID</button></li>
-                  </ul>
+              <div className="text-slate-600 small lh-sm">
+                <div className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                   <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#0f172a' }}></div>
+                   EcoScrap Management & Logistics
                 </div>
-                <div className="badge bg-light text-dark border mt-1 d-none d-print-block">Status: {records[0]?.status || "PENDING"}</div>
+                <div>Jabbar compound, near usman gani masjid bhiwandi.</div>
+                <div>Maharashtra, India - 421302</div>
+                <div className="mt-2 text-dark"><strong>GSTIN:</strong> 27AABCH1234F1Z1 (PROVISIONAL)</div>
+                <div><strong>Contact:</strong> +91 9850841012 | <strong>Email:</strong> hafizji.scrap@gmail.com</div>
+              </div>
+            </div>
+            
+            <div className="col-4 text-end d-flex flex-column justify-content-between">
+              <div>
+                <h4 className="text-uppercase fw-black text-slate-400 mb-0 ls-wide">
+                  {type === "purchase" ? "Purchase Statement" : "Tax Invoice"}
+                </h4>
+                <div className="fw-bold text-dark fs-5 mt-1">
+                   #ST-{month.replace('-', '')}-{id.toString().padStart(3, '0')}
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                 <div className="small text-muted text-uppercase fw-bold ls-tight">Issued Date</div>
+                 <div className="fw-bold text-dark">{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
               </div>
             </div>
           </div>
 
-          {/* Billing Info */}
-          <div className="row mb-5">
-            <div className="col-6">
-              <p className="text-muted small text-uppercase fw-bold mb-2">Account Details</p>
-              <div className="d-flex align-items-start gap-2">
-                <User size={16} className="text-primary mt-1" />
-                <div>
-                  <h5 className="fw-bold mb-1 text-dark">{partner?.name}</h5>
-                  <p className="text-muted small mb-0">
-                    {partner?.address || "Address not provided"}<br />
-                    <strong>Contact:</strong> {partner?.mobile || "N/A"}
-                  </p>
+          {/* Account & Cycle Info Block (Modern Grid) */}
+          <div className="row mb-5 g-0 border rounded-3 overflow-hidden bg-light bg-opacity-50">
+            <div className="col-7 p-4 border-end">
+              <p className="text-muted smaller text-uppercase fw-black mb-3 ls-wide">Billed To / Provider</p>
+              <div className="ps-1">
+                <h5 className="fw-bold mb-1 text-dark text-uppercase">{partner?.name}</h5>
+                <div className="text-slate-600 small lh-sm">
+                   {partner?.address || "Street address not specified"} <br/>
+                   {partner?.mobile ? <span><strong>M:</strong> +91 {partner.mobile}</span> : "N/A"}
                 </div>
               </div>
             </div>
-            <div className="col-6 text-end">
-              <p className="text-muted small text-uppercase fw-bold mb-2">Billing Cycle</p>
-              <div className="d-flex align-items-center justify-content-end gap-2 h5 fw-bold text-dark">
-                <Calendar size={20} className="text-primary" />
-                {formatMonthName(month)}
+            <div className="col-5 p-4 bg-white">
+              <div className="mb-3 d-print-none">
+                 <p className="text-muted smaller text-uppercase fw-black mb-1 ls-wide">Payment Status</p>
+                 <div className="dropdown">
+                   <button className={`btn btn-sm px-3 py-1 fw-black rounded-pill border-0 ${records[0]?.status === 'PAID' ? 'bg-success text-white' : records[0]?.status === 'PARTIAL' ? 'bg-warning text-dark' : 'bg-danger text-white'}`} type="button" data-bs-toggle="dropdown">
+                     {records[0]?.status || "UNPAID"}
+                   </button>
+                   <ul className="dropdown-menu shadow border-0">
+                     <li><button className="dropdown-item small fw-bold" onClick={() => updateStatus('PENDING')}>SET UNPAID</button></li>
+                     <li><button className="dropdown-item small fw-bold" onClick={() => updateStatus('PARTIAL')}>SET PARTIAL</button></li>
+                     <li><button className="dropdown-item small fw-bold" onClick={() => updateStatus('PAID')}>SET PAID</button></li>
+                   </ul>
+                 </div>
+              </div>
+              <div className={records[0]?.status ? "mt-0" : "mt-0"}>
+                 <p className="text-muted smaller text-uppercase fw-black mb-1 ls-wide">Reporting Period</p>
+                 <div className="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                    {formatMonthName(month)}
+                 </div>
               </div>
             </div>
           </div>
 
           {/* Table */}
           <div className="table-responsive">
-            <table className="table table-bordered align-middle">
-              <thead className="bg-light">
-                <tr className="small text-uppercase fw-bold">
-                  <th className="ps-3" style={{ width: '50px' }}>#</th>
-                  <th>Material & Description</th>
-                  <th className="text-center">Entry Date</th>
-                  <th className="text-center">Weight (kg)</th>
-                  <th className="text-center">Rate (₹)</th>
-                  <th className="text-end pe-3">Subtotal</th>
+            <table className="table table-hover align-middle mb-0" style={{ borderCollapse: 'separate', borderSpacing: '0' }}>
+              <thead>
+                <tr className="bg-light text-muted small text-uppercase fw-bold border-top border-bottom">
+                  <th className="ps-4 py-3" style={{ width: '60px' }}>#</th>
+                  <th className="py-3">Material & Item Details</th>
+                  <th className="text-center py-3">Transaction Date</th>
+                  <th className="text-center py-3">Weight (kg)</th>
+                  {showRates && <th className="text-center py-3">Unit Rate (₹)</th>}
+                  {showRates && <th className="text-end pe-4 py-3">Subtotal</th>}
                 </tr>
               </thead>
               <tbody>
                 {records.map((r, index) => (
-                  <tr key={index}>
-                    <td className="text-center">{index + 1}</td>
-                    <td>
-                      <div className="fw-bold text-dark text-capitalize">{r.materialName}</div>
-                      <small className="text-muted">Batch ID: #REC-{r.id}</small>
+                  <tr key={index} className="border-bottom">
+                    <td className="ps-4 py-3 text-muted small">{index + 1}</td>
+                    <td className="py-3">
+                      <div className="fw-bold text-dark text-capitalize lh-1 mb-1">{r.materialName}</div>
+                      <div className="d-flex align-items-center gap-2">
+                        {r.materialNameHindi && <span className="text-secondary small fw-medium">{r.materialNameHindi}</span>}
+                        <span className="badge bg-light text-muted border-0 fw-normal small px-0" style={{ fontSize: '0.65rem' }}>ID: #REC-{r.id}</span>
+                      </div>
                     </td>
-                    <td className="text-center small text-muted">
-                      {new Date(r.purchaseDate || r.saleDate).toLocaleDateString()}
+                    <td className="text-center py-3 small text-muted">
+                      {new Date(r.purchaseDate || r.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="text-center fw-bold">{r.weight.toFixed(2)}</td>
-                    <td className="text-center">₹{r.rate.toLocaleString()}</td>
-                    <td className="text-end pe-3 fw-bold">₹{r.amount.toLocaleString()}</td>
+                    <td className={`text-center py-3 fw-bold ${!showRates ? 'fs-5 text-primary' : 'text-dark'}`}>
+                       {r.weight.toFixed(2)} {!showRates && <span className="small opacity-50">kg</span>}
+                    </td>
+                    {showRates && <td className="text-center py-3">₹{r.rate.toLocaleString('en-IN')}</td>}
+                    {showRates && <td className="text-end pe-4 py-3 fw-bold text-dark">₹{r.amount.toLocaleString('en-IN')}</td>}
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="border-top-0">
-                <tr>
-                  <td colSpan="3" className="border-0"></td>
-                  {/* <td className="text-center bg-light fw-bold border-top">{totalWeight.toFixed(2)} kg</td> */}
-                  <td className="text-end fw-bold border-0 pt-3">Grand Total:</td>
-                  <td className={`text-end pe-3 border-top pt-3 h4 fw-bold ${type === "purchase" ? "text-danger" : "text-success"}`}>
-                    ₹{totalAmount.toLocaleString()}
-                  </td>
-                </tr>
-              </tfoot>
             </table>
           </div>
 
-          {/* Signature Area */}
-          <div className="row mt-5 pt-5">
-            <div className="col-4">
-              <div className="border-top text-center pt-2 small text-muted">Authorized Signatory</div>
-            </div>
-            <div className="col-4 offset-4">
-              <div className="border-top text-center pt-2 small text-muted">Receiver's Seal</div>
-            </div>
-          </div>
+          {/* SUMMARY / TOTAL SECTION WITH SIGNATURE */}
+          <div className="row mt-4 pt-4 border-top">
+             {/* Signature Block (Left side of totals) */}
+             <div className="col-7 text-start">
+                <div className="d-flex flex-column align-items-start justify-content-end h-100 ps-4">
+                   <div className="signature-container mb-1" style={{ height: '70px', width: '180px' }}>
+                      <img 
+                        src="/signature.png" 
+                        alt="Authorized Signatory" 
+                        className="img-fluid" 
+                        style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                   </div>
+                   <div className="border-top border-dark pt-1" style={{ width: '180px' }}>
+                      <p className="text-uppercase fw-black text-dark mb-0 ls-tight smaller">Authorized Signatory</p>
+                      <div className="text-muted" style={{ fontSize: '0.55rem' }}>E-Verified Statement</div>
+                   </div>
+                </div>
+             </div>
 
-          {/* Footer Note */}
-          <div className="text-center mt-5 pt-4 text-muted small border-top">
-            This is a computer-generated document. No physical signature is required for digital verification.
+             {/* Totals Block */}
+             <div className="col-5">
+                <div className="d-flex justify-content-between align-items-center px-2 mb-2">
+                   <span className="text-muted small fw-bold text-uppercase">Total Volume</span>
+                   <span className="fw-bold text-dark">{totalWeight.toFixed(2)} kg</span>
+                </div>
+                {showRates ? (
+                  <div className="d-flex justify-content-between align-items-center px-2 py-3 border-top border-2 border-dark mt-2 bg-light rounded-3 shadow-sm">
+                     <span className="h5 fw-bold mb-0 text-uppercase">Grand Total</span>
+                     <span className={`h4 fw-bold mb-0 ${type === "purchase" ? "text-danger" : "text-success"}`}>
+                        ₹{totalAmount.toLocaleString('en-IN')}
+                     </span>
+                  </div>
+                ) : (
+                  <div className="d-flex justify-content-between align-items-center px-2 py-3 border-top border-2 border-dark mt-2 bg-light rounded-3">
+                     <span className="h5 fw-bold mb-0 text-uppercase">Total Weight</span>
+                     <span className="h4 fw-bold mb-0 text-dark">
+                        {totalWeight.toFixed(2)} kg
+                     </span>
+                  </div>
+                )}
+             </div>
           </div>
         </div>
       </div>
@@ -277,7 +367,9 @@ export default function BillDetails() {
             .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
             .card { box-shadow: none !important; border: none !important; }
             .card-body { padding: 40px !important; }
+            .table-responsive { overflow: visible !important; }
         }
+        .table-responsive { overflow: visible !important; }
       `}</style>
     </div>
   );

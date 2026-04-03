@@ -11,6 +11,7 @@ import Accounts from "./src/Pages/Accounts";
 import MaterialsManagement from "./src/Pages/MaterialsManagement";
 import History from "./src/Pages/History";
 import BillDetails from "./src/Pages/BillDetails";
+import Production from "./src/Pages/Production";
 
 export default function AppRouter() {
   const routes = createBrowserRouter([
@@ -32,6 +33,10 @@ export default function AppRouter() {
         {
             path: "/purchase",
             element: <Purchase />,
+        },
+        {
+            path: "/production",
+            element: <Production />,
         },
         {
             path: "/settings",

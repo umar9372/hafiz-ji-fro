@@ -22,6 +22,7 @@ function Purchase() {
   const currentMonthStr = new Date().toISOString().slice(0, 7);
   const [recordMonth, setRecordMonth] = useState(currentMonthStr);
   const [deleteId, setDeleteId] = useState(null);
+  const [isSubmittingAll, setIsSubmittingAll] = useState(false);
 
   useEffect(() => {
     fetchSuppliers();
@@ -64,7 +65,7 @@ function Purchase() {
 
   const loadSupplierDetails = async (sId, month) => {
     try {
-      const res = await axios.get(`${loca}/suppliers/${sId}/details?month=${month}`);
+      const res = await axios.get(`${loca}/suppliers/${sId}/details?month=${month}&mappedOnly=true`);
       setSupplierDetails(res.data);
 
       const mapped = res.data.materials.map(m => {
@@ -134,6 +135,36 @@ function Purchase() {
     } catch (err) {
       toast.error("Error: " + (err.response?.data?.message || err.message));
       setMaterialsData(prev => prev.map(item => item.materialId === m.materialId ? { ...item, isSubmitting: false } : item));
+    }
+  };
+
+  const handleConfirmAll = async () => {
+    const itemsToSubmit = materialsData.filter(m => m.inputWeight && m.inputWeight > 0);
+    if (itemsToSubmit.length === 0) return;
+
+    setIsSubmittingAll(true);
+    const toastId = toast.loading(`Uploading ${itemsToSubmit.length} items...`);
+
+    try {
+      const payload = itemsToSubmit.map(m => ({
+        supplierId: parseInt(selectedSupplierId),
+        materialId: parseInt(m.materialId),
+        weight: parseFloat(m.inputWeight),
+        rate: parseFloat(m.inputRate),
+        recordMonth: recordMonth,
+        userName: user?.username || "system"
+      }));
+
+      await axios.post(`${loca}/purchases/bulk`, payload);
+      
+      toast.success(`Succesfully added ${itemsToSubmit.length} items!`, { id: toastId });
+      
+      setMaterialsData(prev => prev.map(item => ({ ...item, inputWeight: "" })));
+      fetchPurchases();
+    } catch (err) {
+      toast.error("Bulk upload failed: " + (err.response?.data?.message || err.message), { id: toastId });
+    } finally {
+      setIsSubmittingAll(false);
     }
   };
 
@@ -216,7 +247,18 @@ function Purchase() {
                 <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
                   <PlusCircle size={20} /> Register Loads
                 </h5>
-                <span className="badge bg-danger px-3">{formatMonthName(recordMonth)}</span>
+                <div className="d-flex align-items-center gap-3">
+                    {materialsData.some(m => m.inputWeight > 0) && (
+                        <button 
+                          className="btn btn-warning btn-sm fw-bold px-3 shadow-sm border-white"
+                          onClick={handleConfirmAll}
+                          disabled={isSubmittingAll}
+                        >
+                          {isSubmittingAll ? "Saving..." : "Confirm All Entries"}
+                        </button>
+                    )}
+                    <span className="badge bg-danger px-3">{formatMonthName(recordMonth)}</span>
+                </div>
               </div>
 
               {/* DESKTOP TABLE VIEW */}
@@ -241,7 +283,8 @@ function Purchase() {
                         return (
                           <tr key={m.materialId} className={hasWeight ? "table-danger bg-opacity-10" : ""}>
                             <td className="ps-4 fw-bold text-dark text-capitalize">
-                              {m.materialName}
+                              <div>{m.materialName}</div>
+                              {m.materialNameHindi && <div className="text-secondary small fw-normal">{m.materialNameHindi}</div>}
                               <div style={{ fontSize: "0.7rem" }} className="text-muted fw-normal">Smart Rate: ₹{m.inputRate}</div>
                             </td>
                             <td>
@@ -289,7 +332,10 @@ function Purchase() {
                   const hasWeight = m.inputWeight && m.inputWeight > 0;
                   return (
                     <div key={m.materialId} className="mobile-card-entry">
-                      <h6 className="fw-bold text-dark text-capitalize mb-2">{m.materialName}</h6>
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <h6 className="fw-bold text-dark text-capitalize m-0">{m.materialName}</h6>
+                        {m.materialNameHindi && <span className="text-secondary small">{m.materialNameHindi}</span>}
+                      </div>
                       <div className="row g-2 align-items-center mb-1">
                          <div className="col-4">
                             <label className="small text-muted mb-1 d-block">Weight</label>
@@ -381,7 +427,10 @@ function Purchase() {
                                         <small className="text-muted">ID: #{p.id}</small>
                                     </td>
                                     <td>
-                                        <span className="badge bg-light text-dark border fw-bold text-capitalize px-3">{p.materialName}</span>
+                                        <div className="badge bg-light text-dark border fw-bold text-capitalize px-3">
+                                            {p.materialName}
+                                            {p.materialNameHindi && <div className="text-secondary x-small fw-normal">{p.materialNameHindi}</div>}
+                                        </div>
                                     </td>
                                     <td className="text-center fw-bold text-danger">{p.weight.toFixed(2)} kg</td>
                                     <td className="text-end fw-bold text-dark">₹{p.amount.toLocaleString()}</td>
@@ -405,8 +454,9 @@ function Purchase() {
                     return filtered.map((p, idx) => (
                         <div key={idx} className="p-3 border-bottom d-flex justify-content-between align-items-center bg-white shadow-sm mb-1">
                             <div>
-                                <div className="small text-muted">{new Date(p.purchaseDate).toLocaleDateString()}</div>
-                                <div className="fw-bold text-dark text-capitalize">{p.materialName}</div>
+                                <div className="fw-bold text-dark text-capitalize">
+                                    {p.materialName} {p.materialNameHindi && <span className="text-secondary small ms-1">({p.materialNameHindi})</span>}
+                                </div>
                                 <div className="text-danger fw-bold small">₹{p.amount.toLocaleString()}</div>
                             </div>
                             <div className="text-end">

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { WorkshopContext } from "../Context";
 import axios from "axios";
-import { Search } from "lucide-react";
+import { Search, Package, BarChart3, ArrowRight, Activity, RefreshCw, AlertTriangle, TrendingUp, History as HistoryIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmModal from "../Components/ConfirmModal";
 import InventoryHistoryModal from "../Components/InventoryHistoryModal";
@@ -49,9 +49,9 @@ export default function InventoryPage() {
       });
   };
 
-  const fetchMaterialHistory = async (materialId, materialName) => {
+  const fetchMaterialHistory = async (materialId, materialName, materialNameHindi) => {
     setHistoryLoading(true);
-    setSelectedMaterial(materialName);
+    setSelectedMaterial(materialNameHindi ? `${materialName} (${materialNameHindi})` : materialName);
     try {
       const res = await axios.get(`${loca}/inventories/history?materialId=${materialId}`);
       setMaterialHistory(res.data.data || []);
@@ -75,115 +75,143 @@ export default function InventoryPage() {
   );
 
   return (
-    <div className="container py-5 mt-5">
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div className="warehouse-prime-dashboard">
+      {/* PRIME ASSET HEADER */}
+      <div className="d-flex justify-content-between align-items-end mb-5">
         <div>
-          <h2 className="fw-bold text-dark m-0">Warehouse Inventory</h2>
-          <p className="text-muted m-0 small">Real-time tracking of available stock</p>
-        </div>
-        <div className="d-flex align-items-center justify-content-between justify-content-md-end gap-3 p-3 bg-white rounded-3 shadow-sm border">
-          <button 
-            className="btn btn-outline-primary btn-sm fw-bold shadow-sm px-3"
-            onClick={() => setShowSyncConfirm(true)}
-          >
-            🔄 Sync
-          </button>
-          <div className="text-end">
-            <h6 className="text-muted m-0 small fw-bold">Estimated Value</h6>
-            <h4 className="fw-bold text-success m-0">₹{totalWorth.toLocaleString(undefined, { minimumFractionDigits: 0 })}</h4>
+          <div className="d-flex align-items-center gap-2 mb-1">
+             <div className="prime-accent-dot ripple-pulse"></div>
+             <span className="text-secondary fw-black text-uppercase tracking-widest smaller">System Operational</span>
           </div>
+          <h1 className="display-6 fw-black text-slate-900 tracking-tightest m-0">Warehouse Assets</h1>
+          <p className="text-slate-400 fw-medium m-0">Institutional inventory management & real-time valuation.</p>
+        </div>
+        <div className="text-end">
+           <div className="asset-pulse-box p-4 bg-white border-0 shadow-premium rounded-4 d-inline-block">
+              <div className="d-flex align-items-center gap-4">
+                 <div className="text-start">
+                    <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Portfolio Value</div>
+                    <div className="h2 fw-black text-indigo-600 m-0 ls-tight">₹{totalWorth.toLocaleString('en-IN')}</div>
+                 </div>
+                 <div className="bg-indigo-50 p-3 rounded-circle text-indigo-600">
+                    <TrendingUp size={24} />
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className="input-group shadow-sm" style={{ maxWidth: '400px' }}>
-          <span className="input-group-text bg-white border-end-0">
-            <Search size={18} className="text-muted" />
-          </span>
-          <input
-            type="text"
-            className="form-control border-start-0 ps-0"
-            placeholder="Search material..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {/* FILTER & SYNC ACTION BAR */}
+      <div className="row g-3 mb-5">
+         <div className="col-lg-8">
+            <div className="search-box-premium position-relative h-100">
+               <Search className="position-absolute head-icon text-slate-300" size={20} />
+               <input 
+                 type="text" 
+                 className="form-control premium-input px-5 h-100 py-3 rounded-4 border-0 shadow-sm" 
+                 placeholder="Search by asset name or material ID..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+               />
+            </div>
+         </div>
+         <div className="col-lg-4">
+            <button 
+              className="btn btn-indigo w-100 h-100 rounded-4 shadow-indigo py-3 d-flex align-items-center justify-content-center gap-2 border-0"
+              onClick={() => setShowSyncConfirm(true)}
+            >
+               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+               <span className="fw-black text-uppercase tracking-wide smaller">Refresh Global Ledger</span>
+            </button>
+         </div>
       </div>
 
       {error ? (
-        <div className="alert alert-danger shadow-sm">
-          <strong>Failed to load inventory:</strong> {error}
+        <div className="prime-error-state p-5 bg-white rounded-4 border-0 shadow-premium text-center">
+           <AlertTriangle size={64} className="text-slate-200 mb-3" />
+           <h3 className="fw-black text-slate-900">Synchronization Error</h3>
+           <p className="text-slate-500 mb-0">{error}</p>
         </div>
       ) : loading ? (
         <div className="text-center py-5">
-          <div className="spinner-border text-success" role="status"></div>
-          <p className="mt-2 text-muted fw-bold">Scanning Warehouse...</p>
-        </div>
-      ) : filteredList.length === 0 ? (
-        <div className="alert alert-warning text-center shadow-sm py-4">
-          <h4 className="fw-bold">No Materials Found!</h4>
-          <p className="m-0">No materials in the warehouse match your search choice.</p>
+           <div className="prime-loader mx-auto mb-4"></div>
+           <h5 className="fw-black text-slate-400 text-uppercase tracking-wider animate-pulse">Scanning Warehouse Modules...</h5>
         </div>
       ) : (
         <div className="row g-4">
-          {filteredList.map((item) => (
-            <div key={item.materialId} className="col-12 col-md-6 col-lg-4" onClick={() => fetchMaterialHistory(item.materialId, item.materialName)}>
-              <div className="card shadow-sm h-100 border-0 border-start border-4 border-primary hover-scale cursor-pointer" style={{ transition: "transform 0.2s" }}>
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="card-title fw-bold m-0 text-primary fs-4 text-capitalize">
-                      {item.materialName}
-                    </h5>
-                    <span className="badge bg-light text-dark shadow-sm">ID: {item.materialId}</span>
-                  </div>
-                  
-                  <div className="d-flex align-items-end justify-content-between mt-4">
-                    <div>
-                      <h6 className="text-muted m-0 fw-bold">Stock Weight</h6>
-                      <h2 className="fw-bold m-0 text-dark">{item.quantity} <span className="fs-6 text-muted">kg</span></h2>
-                    </div>
-                    <div className="text-end">
-                      <h6 className="text-muted m-0 fw-bold">Market Rate</h6>
-                      <h4 className="fw-bold m-0 text-success">₹{item.rate} <span className="fs-6 text-muted">/kg</span></h4>
-                    </div>
-                  </div>
-                  
-                  <hr className="my-2 text-muted" />
-                  
-                  <div className="d-flex justify-content-between align-items-center text-muted fs-6 mb-2">
-                    <small>Worth: <strong className="text-dark">₹{(parseFloat(item.quantity) * parseFloat(item.rate)).toFixed(2)}</strong></small>
-                    <small>Updated: {item.updatedAt !== "N/A" ? new Date(item.updatedAt).toLocaleDateString() : "Never"}</small>
-                  </div>
-
-                  <div className="text-center pt-2 border-top">
-                    <span className="text-primary small fw-bold d-flex align-items-center justify-content-center gap-1">
-                      {historyLoading && selectedMaterial === item.materialName ? (
-                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                      ) : (
-                        <>📜 View Registry</>
-                      )}
-                    </span>
-                  </div>
+           {filteredList.map((item) => {
+              const weight = parseFloat(item.quantity) || 0;
+              const rate = parseFloat(item.rate) || 0;
+              const value = weight * rate;
+              
+              return (
+                <div key={item.materialId} className="col-12" onClick={() => fetchMaterialHistory(item.materialId, item.materialName, item.materialNameHindi)}>
+                   <div className="asset-card-horizontal bg-white p-4 rounded-4 shadow-premium border-0 position-relative overflow-hidden hover-rise pointer">
+                      <div className="row align-items-center">
+                         <div className="col-md-3 border-end">
+                            <div className="d-flex align-items-center gap-3">
+                               <div className={`asset-status-indicator ${weight > 0 ? 'bg-success' : 'bg-slate-300'}`}></div>
+                               <div>
+                                  <h4 className="fw-black text-slate-900 m-0 text-capitalize ls-tight">{item.materialName}</h4>
+                                  <div className="d-flex align-items-center gap-2">
+                                     <span className="text-slate-400 smaller fw-bold">{item.materialNameHindi || "REGULAR"}</span>
+                                     <span className="badge-prime px-2">ID_{item.materialId}</span>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                         <div className="col-md-2 text-center border-end">
+                            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Market Rate</div>
+                            <div className="h5 fw-black text-slate-900 m-0">₹{rate.toLocaleString('en-IN')}</div>
+                            <div className="smaller text-slate-300 fw-bold">Per Kilogram</div>
+                         </div>
+                         <div className="col-md-3 text-center border-end">
+                            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Current Balance</div>
+                            <div className="h2 fw-black text-slate-900 m-0 tracking-tightest">{weight.toLocaleString()} <small className="text-slate-400 fw-medium h6">kg</small></div>
+                         </div>
+                         <div className="col-md-3 text-center">
+                            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Calculated Worth</div>
+                            <div className="h3 fw-black text-indigo-600 m-0">₹{Math.floor(value).toLocaleString('en-IN')}</div>
+                         </div>
+                         <div className="col-md-1 text-end">
+                            <div className="bg-slate-50 p-2 rounded-circle text-slate-400 d-inline-block hover-indigo transition-all">
+                               <ArrowRight size={20} />
+                            </div>
+                         </div>
+                      </div>
+                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              );
+           })}
+           {filteredList.length === 0 && (
+             <div className="text-center py-5 bg-white rounded-4 shadow-sm">
+                <Package size={48} className="text-slate-100 mb-3" />
+                <h5 className="fw-black text-slate-400">0 RECORDS DETECTED</h5>
+             </div>
+           )}
         </div>
       )}
 
-      {/* Adding some simple CSS for hover effect */}
+      {/* LUXURY PRIME STYLE INJECTOR */}
       <style>{`
-        .hover-scale:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        .hover-lift:hover { 
+          transform: translateY(-8px) scale(1.01); 
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; 
         }
+        
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
       `}</style>
+
       <ConfirmModal 
         isOpen={showSyncConfirm}
         onClose={() => setShowSyncConfirm(false)}
         onConfirm={handleSync}
-        title="Recalculate Stock?"
-        message="This will update all inventory levels based on your entire purchase and sales history. It may take a moment."
+        title="Refresh Inventory Assets?"
+        message="This will re-calculate every material balance against your entire transaction history. This is an administrative process."
         type="warning"
       />
 

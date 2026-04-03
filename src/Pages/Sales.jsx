@@ -22,6 +22,7 @@ function Sales() {
   const currentMonthStr = new Date().toISOString().slice(0, 7);
   const [recordMonth, setRecordMonth] = useState(currentMonthStr);
   const [deleteId, setDeleteId] = useState(null);
+  const [isSubmittingAll, setIsSubmittingAll] = useState(false);
 
   useEffect(() => {
     fetchVendors();
@@ -64,7 +65,7 @@ function Sales() {
 
   const loadVendorDetails = async (vId, month) => {
     try {
-      const res = await axios.get(`${loca}/vendors/${vId}/details?month=${month}`);
+      const res = await axios.get(`${loca}/vendors/${vId}/details?month=${month}&mappedOnly=true`);
       setVendorDetails(res.data);
 
       const mapped = res.data.materials.map(m => {
@@ -135,6 +136,36 @@ function Sales() {
       const errBody = err.response?.data?.message || err.response?.data || err.message;
       toast.error("Error: " + errBody);
       setMaterialsData(prev => prev.map(item => item.materialId === m.materialId ? { ...item, isSubmitting: false } : item));
+    }
+  };
+
+  const handleConfirmAll = async () => {
+    const itemsToSubmit = materialsData.filter(m => m.inputWeight && m.inputWeight > 0);
+    if (itemsToSubmit.length === 0) return;
+
+    setIsSubmittingAll(true);
+    const toastId = toast.loading(`Processing ${itemsToSubmit.length} shipments...`);
+
+    try {
+      const payload = itemsToSubmit.map(m => ({
+        vendorId: parseInt(selectedVendorId),
+        materialId: parseInt(m.materialId),
+        weight: parseFloat(m.inputWeight),
+        rate: parseFloat(m.inputRate),
+        recordMonth: recordMonth,
+        userName: user?.username || "system"
+      }));
+
+      await axios.post(`${loca}/sales/bulk`, payload);
+      
+      toast.success(`Succesfully shipped ${itemsToSubmit.length} items!`, { id: toastId });
+      
+      setMaterialsData(prev => prev.map(item => ({ ...item, inputWeight: "" })));
+      fetchSales();
+    } catch (err) {
+      toast.error("Bulk shipment failed: " + (err.response?.data?.message || err.message), { id: toastId });
+    } finally {
+      setIsSubmittingAll(false);
     }
   };
 
@@ -217,7 +248,18 @@ function Sales() {
                 <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
                   <PlusCircle size={20} /> Sales Dispatch Register
                 </h5>
-                <span className="badge bg-success px-3">{formatMonthName(recordMonth)}</span>
+                <div className="d-flex align-items-center gap-3">
+                  {materialsData.some(m => m.inputWeight > 0) && (
+                    <button 
+                      className="btn btn-warning btn-sm fw-bold px-3 shadow-sm border-white"
+                      onClick={handleConfirmAll}
+                      disabled={isSubmittingAll}
+                    >
+                      {isSubmittingAll ? "Processing..." : "Ship All Items"}
+                    </button>
+                    )}
+                    <span className="badge bg-success px-3">{formatMonthName(recordMonth)}</span>
+                </div>
               </div>
               {/* DESKTOP VIEW */}
               <div className="table-responsive desktop-only">
@@ -241,7 +283,8 @@ function Sales() {
                         return (
                             <tr key={m.materialId} className={hasWeight ? "table-success bg-opacity-10" : ""}>
                             <td className="ps-4 fw-bold text-dark text-capitalize">
-                                {m.materialName}
+                                <div>{m.materialName}</div>
+                                {m.materialNameHindi && <div className="text-secondary small fw-normal">{m.materialNameHindi}</div>}
                                 <div style={{ fontSize: "0.7rem" }} className="text-muted fw-normal">Rate: ₹{m.inputRate}</div>
                             </td>
                             <td>
@@ -289,7 +332,10 @@ function Sales() {
                   const hasWeight = m.inputWeight && m.inputWeight > 0;
                   return (
                     <div key={m.materialId} className="mobile-card-entry">
-                      <h6 className="fw-bold text-dark text-capitalize mb-2">{m.materialName}</h6>
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <h6 className="fw-bold text-dark text-capitalize m-0">{m.materialName}</h6>
+                        {m.materialNameHindi && <span className="text-secondary small">{m.materialNameHindi}</span>}
+                      </div>
                       <div className="row g-2 align-items-center mb-1">
                          <div className="col-4">
                             <label className="small text-muted mb-1 d-block">Weight</label>
@@ -417,7 +463,10 @@ function Sales() {
                                         <small className="text-muted">ID: #{s.id}</small>
                                     </td>
                                     <td>
-                                        <span className="badge bg-light text-dark border fw-bold text-capitalize px-3">{s.materialName}</span>
+                                        <div className="badge bg-light text-dark border fw-bold text-capitalize px-3">
+                                            {s.materialName}
+                                            {s.materialNameHindi && <div className="text-secondary x-small fw-normal">{s.materialNameHindi}</div>}
+                                        </div>
                                     </td>
                                     <td className="text-center fw-bold text-success">{s.weight.toFixed(2)} kg</td>
                                     <td className="text-end fw-bold text-dark">₹{s.amount.toLocaleString()}</td>
@@ -441,8 +490,9 @@ function Sales() {
                     return filtered.map((p, idx) => (
                         <div key={idx} className="p-3 border-bottom d-flex justify-content-between align-items-center bg-white shadow-sm mb-1">
                             <div>
-                                <div className="small text-muted">{new Date(p.saleDate).toLocaleDateString()}</div>
-                                <div className="fw-bold text-dark text-capitalize">{p.materialName}</div>
+                                <div className="fw-bold text-dark text-capitalize">
+                                    {p.materialName} {p.materialNameHindi && <span className="text-secondary small ms-1">({p.materialNameHindi})</span>}
+                                </div>
                                 <div className="text-success fw-bold small">₹{p.amount.toLocaleString()}</div>
                             </div>
                             <div className="text-end">

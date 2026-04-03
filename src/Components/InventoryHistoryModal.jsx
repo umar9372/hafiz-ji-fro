@@ -35,6 +35,7 @@ const InventoryHistoryModal = ({ isOpen, onClose, history, materialName }) => {
                         <th>Date</th>
                         <th>Account</th>
                         <th className="text-center">Weight</th>
+                        <th className="text-center">Rate</th>
                         <th className="text-end pe-4">Subtotal</th>
                       </tr>
                     </thead>
@@ -63,6 +64,7 @@ const InventoryHistoryModal = ({ isOpen, onClose, history, materialName }) => {
                               {item.type === 'PURCHASE' ? '+' : '-'}{item.weight.toFixed(2)} <small>kg</small>
                             </span>
                           </td>
+                          <td className="text-center small text-muted">₹{item.rate}</td>
                           <td className="text-end pe-4 fw-bold">₹{item.amount.toLocaleString()}</td>
                         </tr>
                       ))}
@@ -87,7 +89,8 @@ const InventoryHistoryModal = ({ isOpen, onClose, history, materialName }) => {
                           <div className={`fw-bold h6 m-0 ${item.type === 'PURCHASE' ? 'text-success' : 'text-danger'}`}>
                              {item.type === 'PURCHASE' ? '+' : '-'}{item.weight.toFixed(2)} kg
                           </div>
-                          <small className="text-muted fw-bold">₹{item.amount.toLocaleString()}</small>
+                          <div className="text-muted small fw-bold">Rate: ₹{item.rate}</div>
+                          <small className="text-muted fw-bold">Total: ₹{item.amount.toLocaleString()}</small>
                        </div>
                     </div>
                   ))}
