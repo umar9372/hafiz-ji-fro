@@ -6,16 +6,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
-      filename: 'manifest.json',
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
-        name: 'Hafiz JI Accounts',
+        name: 'Hafiz JI Accounts Ledger',
         short_name: 'Hafiz JI',
-        description: 'Store, Supplier, and Sales Management Tool',
+        description: 'Store, Supplier, and Sales Management Terminal',
         theme_color: '#198754',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'any',
         scope: '/',
         start_url: '/',
         icons: [
@@ -23,13 +24,25 @@ export default defineConfig({
             src: '/logo.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/logo.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
           },
           {
             src: '/logo.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/logo.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },

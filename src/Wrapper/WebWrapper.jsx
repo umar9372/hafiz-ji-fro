@@ -159,7 +159,7 @@ export default function WebWrapper() {
           </header>
 
           {/* PAGE INNER CONTENT */}
-          <div className="flex-grow-1 overflow-auto p-3 p-md-4 bg-light">
+          <div className="flex-grow-1 overflow-y-auto overflow-x-hidden px-2 py-3 p-md-4 bg-light">
             <div className="container-fluid p-0 pb-5 pb-md-0">
               <Outlet />
             </div>

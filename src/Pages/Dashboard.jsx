@@ -211,9 +211,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <button className="btn btn-dark btn-sm fw-bold px-4 py-2 w-100 w-md-auto d-flex align-items-center justify-content-center gap-2 shadow-sm rounded-pill" onClick={() => navigate('/accounts')}>
+          {/* <button className="btn btn-dark btn-sm fw-bold px-4 py-2 w-100 w-md-auto d-flex align-items-center justify-content-center gap-2 shadow-sm rounded-pill" onClick={() => navigate('/accounts')}>
             Manage Procurement <ArrowRight size={16} />
-          </button>
+          </button> */}
         </div>
       )}
 

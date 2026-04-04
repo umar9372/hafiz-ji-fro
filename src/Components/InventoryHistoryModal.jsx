@@ -9,10 +9,11 @@ const InventoryHistoryModal = ({ isOpen, onClose, history, materialName }) => {
       <div className="modal-dialog modal-lg modal-fullscreen-sm-down modal-dialog-centered shadow-lg">
         <div className="modal-content border-0 rounded-4 overflow-hidden">
           <div className="modal-header bg-dark text-white border-0 py-3">
-            <h5 className="modal-title fw-bold d-flex align-items-center gap-2">
-              <Package size={20} className="text-success" />
-              Stock Movement: <span className="text-capitalize text-success">{materialName}</span>
-            </h5>
+            <h6 className="modal-title fw-black d-flex align-items-center gap-2 text-uppercase tracking-wide">
+              <Package size={18} className="text-success" />
+              <span className="d-none d-sm-inline">Stock Movement:</span>
+              <span className="text-success">{materialName}</span>
+            </h6>
             <button type="button" className="btn-close btn-close-white shadow-none" onClick={onClose}></button>
           </div>
           <div className="modal-body p-0" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
@@ -72,44 +73,60 @@ const InventoryHistoryModal = ({ isOpen, onClose, history, materialName }) => {
                   </table>
                 </div>
 
-                {/* MOBILE VIEW */}
-                <div className="mobile-only p-2 bg-light">
+                {/* MOBILE VIEW - High Density Cards */}
+                <div className="mobile-only d-md-none bg-light p-3" style={{ backgroundColor: '#f8fafc' }}>
+                  <div className="text-muted smaller fw-black text-uppercase tracking-widest mb-3 border-bottom pb-2 opacity-75">Transaction Ledger</div>
                   {history.map((item, idx) => (
-                    <div key={idx} className="p-3 bg-white rounded-3 shadow-sm border mb-2 d-flex justify-content-between align-items-center">
-                       <div>
-                          <div className="d-flex align-items-center gap-2 mb-1">
-                             <div className={`rounded-circle p-1 ${item.type === 'PURCHASE' ? 'bg-success' : 'bg-danger'} bg-opacity-10`}>
-                                {item.type === 'PURCHASE' ? <ArrowDownLeft size={14} className="text-success" /> : <ArrowUpRight size={14} className="text-danger" />}
-                             </div>
-                             <small className="fw-bold text-muted">{new Date(item.date).toLocaleDateString()}</small>
+                    <div key={idx} className="bg-white p-3 rounded-4 shadow-sm border border-light mb-3 position-relative overflow-hidden">
+                      {/* Directional Indicator Bar */}
+                      <div className={`position-absolute top-0 start-0 h-100 ${item.type === 'PURCHASE' ? 'bg-success' : 'bg-danger'}`} style={{ width: '4px' }}></div>
+
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className={`p-2 rounded-3 ${item.type === 'PURCHASE' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}`}>
+                            {item.type === 'PURCHASE' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                           </div>
-                          <div className="fw-bold text-dark">{item.partyName}</div>
-                       </div>
-                       <div className="text-end">
-                          <div className={`fw-bold h6 m-0 ${item.type === 'PURCHASE' ? 'text-success' : 'text-danger'}`}>
-                             {item.type === 'PURCHASE' ? '+' : '-'}{item.weight.toFixed(2)} kg
+                          <div>
+                            <small className="text-muted fw-bold smaller d-block lh-1 text-uppercase tracking-wider">{item.type === 'PURCHASE' ? 'Purchased From' : 'Sold To'}</small>
+                            <div className="fw-black text-slate-800 fs-6">{item.partyName}</div>
                           </div>
-                          <div className="text-muted small fw-bold">Rate: ₹{item.rate}</div>
-                          <small className="text-muted fw-bold">Total: ₹{item.amount.toLocaleString()}</small>
-                       </div>
+                        </div>
+                        <div className="text-end">
+                          <div className="badge bg-light text-muted border px-2 py-1 smaller fw-bold">{new Date(item.date).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+
+                      <div className="row g-2 pt-2 border-top">
+                        <div className="col-4 border-end">
+                          <small className="text-muted smaller fw-bold d-block text-uppercase">Weight</small>
+                          <div className={`fw-black ${item.type === 'PURCHASE' ? 'text-success' : 'text-danger'}`}>
+                            {item.type === 'PURCHASE' ? '+' : '-'}{item.weight.toFixed(2)} kg
+                          </div>
+                        </div>
+                        <div className="col-4 border-end ps-3">
+                          <small className="text-muted smaller fw-bold d-block text-uppercase">Price</small>
+                          <div className="fw-bold text-dark">₹{item.rate}</div>
+                        </div>
+                        <div className="col-4 ps-3">
+                          <small className="text-info smaller fw-bold d-block text-uppercase">Total</small>
+                          <div className="fw-black text-dark">₹{item.amount.toLocaleString()}</div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </>
             )}
           </div>
-          <div className="modal-footer bg-light border-0 py-3">
-            <div className="me-auto">
-              <span className="badge bg-dark rounded-pill px-3 py-2 fw-bold shadow-sm">
-                Total Logs: {history.length}
-              </span>
-            </div>
-            <button type="button" className="btn btn-secondary px-4 fw-bold rounded-pill shadow-sm" onClick={onClose}>Close Registry</button>
+          <div className="modal-footer bg-white border-top py-3 d-flex justify-content-between">
+            <span className="text-muted small fw-bold">Records: {history.length}</span>
+            <button type="button" className="btn btn-dark px-4 fw-black rounded-pill smaller tracking-wide text-uppercase" onClick={onClose}>Close Audit</button>
           </div>
         </div>
       </div>
       <style>{`
         .w-fit { width: fit-content; }
+        .text-slate-800 { color: #1e293b; }
       `}</style>
     </div>
   );

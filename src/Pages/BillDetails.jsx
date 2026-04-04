@@ -205,12 +205,12 @@ export default function BillDetails() {
       {/* BILL DOCUMENT */}
       <div className="card shadow-sm border border-light mb-5 bg-white overflow-hidden" ref={printRef} style={{ borderRadius: '0' }}>
 
-        <div className="card-body p-5">
+        <div className="card-body p-5 bill-card-body">
           {/* Executive Letterhead Header */}
           <div className="row mb-5 pb-4 border-bottom border-2">
             <div className="col-8">
               <div className="d-flex align-items-center gap-2 mb-3">
-                <h1 className="fw-black m-0 tracking-tighter text-slate-900" style={{ fontSize: '2.5rem', letterSpacing: '-2px' }}>HAFIZ JI</h1>
+                <h1 className="fw-black m-0 tracking-tighter text-slate-900 bill-main-header" style={{ fontSize: '2.5rem', letterSpacing: '-2px' }}>HAFIZ JI</h1>
               </div>
               <div className="text-slate-600 small lh-sm">
                 {/* <div className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
@@ -226,7 +226,7 @@ export default function BillDetails() {
 
             <div className="col-4 text-end d-flex flex-column justify-content-between">
               <div>
-                <h4 className="text-uppercase fw-black text-slate-400 mb-0 ls-wide">
+                <h4 className="text-uppercase fw-black text-slate-400 mb-0 ls-wide bill-title-text">
                   {type === "purchase" ? "Purchase Statement" : "Tax Invoice"}
                 </h4>
                 <div className="fw-bold text-dark fs-5 mt-1">
@@ -303,7 +303,7 @@ export default function BillDetails() {
                     <td className="text-center py-3 small text-muted">
                       {new Date(r.purchaseDate || r.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className={`text-center py-3 fw-bold ${!showRates ? 'fs-5 text-primary' : 'text-dark'}`}>
+                    <td className={`text-center py-3 fw-bold text-nowrap ${!showRates ? 'fs-5 text-primary' : 'text-dark'}`}>
                       {r.weight.toFixed(2)} {!showRates && <span className="small opacity-50">kg</span>}
                     </td>
                     {showRates && <td className="text-center py-3">₹{r.rate.toLocaleString('en-IN')}</td>}
@@ -319,7 +319,7 @@ export default function BillDetails() {
             {/* Signature Block (Left side of totals) */}
             <div className="col-7 text-start">
               <div className="d-flex flex-column align-items-start justify-content-end h-100 ps-4">
-                <div className="signature-container mb-1" style={{ height: '70px', width: '180px' }}>
+                <div className="signature-container mb-1 signature-img-container" style={{ height: '70px', width: '180px' }}>
                   <img
                     src="/signature.png"
                     alt="Authorized Signatory"
@@ -328,7 +328,7 @@ export default function BillDetails() {
                     onError={(e) => e.target.style.display = 'none'}
                   />
                 </div>
-                <div className="border-top border-dark pt-1" style={{ width: '180px' }}>
+                <div className="border-top border-dark pt-1 signature-box" style={{ width: '180px' }}>
                   <p className="text-uppercase fw-black text-dark mb-0 ls-tight smaller">Authorized Signatory</p>
                   <div className="text-muted" style={{ fontSize: '0.55rem' }}>E-Verified Statement</div>
                 </div>
@@ -338,20 +338,20 @@ export default function BillDetails() {
             {/* Totals Block */}
             <div className="col-5">
               <div className="d-flex justify-content-between align-items-center px-2 mb-2">
-                <span className="text-muted small fw-bold text-uppercase">Total Volume</span>
-                <span className="fw-bold text-dark">{totalWeight.toFixed(2)} kg</span>
+                <span className="text-muted small fw-bold text-uppercase bill-total-label">Total Volume</span>
+                <span className="fw-bold text-dark bill-volume-text">{totalWeight.toFixed(2)} kg</span>
               </div>
               {showRates ? (
-                <div className="d-flex justify-content-between align-items-center px-2 py-3 border-top border-2 border-dark mt-2 bg-light rounded-3 shadow-sm">
-                  <span className="h5 fw-bold mb-0 text-uppercase">Grand Total</span>
-                  <span className={`h4 fw-bold mb-0 ${type === "purchase" ? "text-danger" : "text-success"}`}>
+                <div className="d-flex justify-content-between align-items-center px-2 py-3 border-top border-2 border-dark mt-2 bg-light rounded-3 shadow-sm bill-totals-container">
+                  <span className="h5 fw-bold mb-0 text-uppercase bill-total-label">Grand Total</span>
+                  <span className={`h4 fw-bold mb-0 bill-amount-text ${type === "purchase" ? "text-danger" : "text-success"}`}>
                     ₹{totalAmount.toLocaleString('en-IN')}
                   </span>
                 </div>
               ) : (
-                <div className="d-flex justify-content-between align-items-center px-2 py-3 border-top border-2 border-dark mt-2 bg-light rounded-3">
-                  <span className="h5 fw-bold mb-0 text-uppercase">Total Weight</span>
-                  <span className="h4 fw-bold mb-0 text-dark">
+                <div className="d-flex justify-content-between align-items-center px-2 py-3 border-top border-2 border-dark mt-2 bg-light rounded-3 bill-totals-container">
+                  <span className="h5 fw-bold mb-0 text-uppercase bill-total-label">Total Weight</span>
+                  <span className="h4 fw-bold mb-0 text-dark bill-amount-text">
                     {totalWeight.toFixed(2)} kg
                   </span>
                 </div>
@@ -370,6 +370,18 @@ export default function BillDetails() {
             .table-responsive { overflow: visible !important; }
         }
         .table-responsive { overflow: visible !important; }
+        
+        @media (max-width: 768px) {
+          .bill-main-header { font-size: 1.75rem !important; }
+          .signature-box { width: 120px !important; }
+          .signature-img-container { height: 40px !important; width: 120px !important; }
+          .bill-title-text { font-size: 0.85rem !important; }
+          .bill-card-body { padding: 1.5rem !important; }
+          .bill-totals-container { padding: 0.75rem !important; }
+          .bill-total-label { font-size: 0.75rem !important; margin-right: 0.5rem; }
+          .bill-amount-text { font-size: 1.15rem !important; white-space: nowrap !important; }
+          .bill-volume-text { font-size: 0.8rem !important; white-space: nowrap !important; }
+        }
       `}</style>
     </div>
   );

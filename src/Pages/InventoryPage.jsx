@@ -75,133 +75,186 @@ export default function InventoryPage() {
   );
 
   return (
-    <div className="warehouse-prime-dashboard">
-      {/* PRIME ASSET HEADER */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-4 mb-5">
-        <div>
-          <div className="d-flex align-items-center gap-2 mb-1">
-             <div className="prime-accent-dot ripple-pulse"></div>
-             <span className="text-secondary fw-black text-uppercase tracking-widest smaller">System Operational</span>
+    <div className="warehouse-terminal-container">
+      {/* PROFESSIONAL ASSET HEADER */}
+      <div className="row g-4 mb-4 align-items-center">
+        <div className="col-12 col-md-6">
+          <div className="d-flex align-items-center gap-3 mb-2">
+            <span className="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-1 fw-bold smaller tracking-widest text-uppercase">Operational Ledger</span>
+            <span className="d-flex align-items-center gap-1 text-success fw-bold smaller">
+              <Activity size={14} /> LIVE RECKONING
+            </span>
           </div>
-          <h1 className="display-6 fw-black text-slate-900 tracking-tightest m-0">Warehouse Assets</h1>
-          <p className="text-slate-400 fw-medium m-0">Institutional inventory management & real-time valuation.</p>
+          <h2 className="fw-black text-slate-800 m-0 ls-tight">Asset Repository</h2>
+          <p className="text-slate-500 small m-0 mt-1">Enterprise-grade inventory tracking and valuation terminal.</p>
         </div>
-        <div className="text-md-end w-100 w-md-auto">
-           <div className="asset-pulse-box p-3 p-md-4 bg-white border-0 shadow-premium rounded-4 d-block d-md-inline-block">
-              <div className="d-flex align-items-center justify-content-between justify-content-md-center gap-4">
-                 <div className="text-start">
-                    <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Portfolio Value</div>
-                    <div className="h2 fw-black text-indigo-600 m-0 ls-tight">₹{totalWorth.toLocaleString('en-IN')}</div>
-                 </div>
-                 <div className="bg-indigo-50 p-3 rounded-circle text-indigo-600">
-                    <TrendingUp size={24} />
-                 </div>
+        
+        <div className="col-12 col-md-6 text-md-end">
+          <div className="d-inline-flex flex-column align-items-md-end p-3 bg-white shadow-sm rounded-4 border border-light">
+            <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Cumulative Portfolio Value</div>
+            <div className="d-flex align-items-center gap-2">
+              <h3 className="fw-black text-primary m-0 ls-tight">₹{totalWorth.toLocaleString('en-IN')}</h3>
+              <div className="bg-success bg-opacity-10 p-2 rounded-circle text-success">
+                <TrendingUp size={18} />
               </div>
-           </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* FILTER & SYNC ACTION BAR */}
-      <div className="row g-3 mb-5">
-         <div className="col-lg-8">
-            <div className="search-box-premium position-relative h-100">
-               <Search className="position-absolute head-icon text-slate-300" size={20} />
-               <input 
-                 type="text" 
-                 className="form-control premium-input px-5 h-100 py-3 rounded-4 border-0 shadow-sm" 
-                 placeholder="Search by asset name or material ID..."
-                 value={searchTerm}
-                 onChange={(e) => setSearchTerm(e.target.value)}
-               />
-            </div>
-         </div>
-         <div className="col-lg-4">
-            <button 
-              className="btn btn-indigo w-100 h-100 rounded-4 shadow-indigo py-3 d-flex align-items-center justify-content-center gap-2 border-0"
-              onClick={() => setShowSyncConfirm(true)}
-            >
-               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-               <span className="fw-black text-uppercase tracking-wide smaller">Refresh Global Ledger</span>
-            </button>
-         </div>
+      {/* KPI QUICK STATS */}
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div className="text-muted smaller fw-bold text-uppercase mb-2">Active SKUs</div>
+            <div className="h4 fw-black text-dark m-0">{list.length}</div>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div className="text-muted smaller fw-bold text-uppercase mb-2">Total Bulk (kg)</div>
+            <div className="h4 fw-black text-dark m-0">{list.reduce((s, i) => s + (parseFloat(i.quantity) || 0), 0).toLocaleString()}</div>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div className="text-muted smaller fw-bold text-uppercase mb-2">Low Stock Alerts</div>
+            <div className="h4 fw-black text-danger m-0">{list.filter(i => parseFloat(i.quantity) < 100).length}</div>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm rounded-4 p-3 bg-primary text-white h-100">
+            <div className="text-white text-opacity-75 smaller fw-bold text-uppercase mb-2">Liquidity Status</div>
+            <div className="h4 fw-black m-0">HEALTHY</div>
+          </div>
+        </div>
+      </div>
+
+      {/* SEARCH & ACTIONS */}
+      <div className="bg-white p-2 p-md-3 rounded-4 shadow-sm border border-light mb-4 d-flex flex-column flex-md-row gap-3">
+        <div className="position-relative flex-grow-1">
+          <Search className="position-absolute head-icon text-slate-300" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input 
+            type="text" 
+            className="form-control border-0 bg-light bg-opacity-50 ps-5 py-2 py-md-3 rounded-3 fw-medium" 
+            placeholder="Search material assets..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <button 
+          className="btn btn-secondary px-4 py-2 py-md-0 rounded-3 d-flex align-items-center justify-content-center gap-2 fw-bold text-uppercase smaller tracking-wide shadow-sm"
+          onClick={() => setShowSyncConfirm(true)}
+          disabled={loading}
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          Sync Records
+        </button>
       </div>
 
       {error ? (
-        <div className="prime-error-state p-5 bg-white rounded-4 border-0 shadow-premium text-center">
-           <AlertTriangle size={64} className="text-slate-200 mb-3" />
-           <h3 className="fw-black text-slate-900">Synchronization Error</h3>
+        <div className="p-5 bg-white rounded-4 shadow-sm text-center border-0">
+           <AlertTriangle size={48} className="text-danger mb-3 opacity-50" />
+           <h4 className="fw-black text-slate-800">Connection Interrupted</h4>
            <p className="text-slate-500 mb-0">{error}</p>
         </div>
       ) : loading ? (
         <div className="text-center py-5">
-           <div className="prime-loader mx-auto mb-4"></div>
-           <h5 className="fw-black text-slate-400 text-uppercase tracking-wider animate-pulse">Scanning Warehouse Modules...</h5>
+           <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }}></div>
+           <h6 className="fw-bold text-slate-400 text-uppercase tracking-widest animate-pulse">Accessing Secure Vault...</h6>
         </div>
       ) : (
-        <div className="row g-4">
-           {filteredList.map((item) => {
-              const weight = parseFloat(item.quantity) || 0;
-              const rate = parseFloat(item.rate) || 0;
-              const value = weight * rate;
-              
-              return (
-                <div key={item.materialId} className="col-12" onClick={() => fetchMaterialHistory(item.materialId, item.materialName, item.materialNameHindi)}>
-                    <div className="asset-card-horizontal bg-white p-3 p-md-4 rounded-4 shadow-premium border-0 position-relative overflow-hidden hover-rise pointer">
-                       <div className="row g-3 align-items-center">
-                          <div className="col-12 col-md-3 border-end-md pb-2 pb-md-0">
-                             <div className="d-flex align-items-center gap-3">
-                                <div className={`asset-status-indicator ${weight > 0 ? 'bg-success' : 'bg-slate-300'}`}></div>
-                                <div>
-                                   <h5 className="fw-black text-slate-900 m-0 text-capitalize ls-tight">{item.materialName}</h5>
-                                   <div className="d-flex align-items-center gap-2">
-                                      <span className="text-slate-400 smaller fw-bold">{item.materialNameHindi || "REGULAR"}</span>
-                                      <span className="badge-prime px-2">ID_{item.materialId}</span>
-                                   </div>
-                                </div>
-                             </div>
+        <div className="row g-3">
+          {/* DESKTOP HEADER (Hidden on mobile) */}
+          <div className="col-12 d-none d-md-block">
+            <div className="px-4 py-2 border-bottom d-flex align-items-center text-muted fw-bold smaller text-uppercase">
+              <div style={{ width: '30%' }}>Asset Description</div>
+              <div className="text-center" style={{ width: '20%' }}>Unit Valuation</div>
+              <div className="text-center" style={{ width: '20%' }}>Current Balance</div>
+              <div className="text-center" style={{ width: '20%' }}>Net Worth</div>
+              <div className="text-end" style={{ width: '10%' }}>Actions</div>
+            </div>
+          </div>
+
+          {filteredList.map((item) => {
+            const weight = parseFloat(item.quantity) || 0;
+            const rate = parseFloat(item.rate) || 0;
+            const value = weight * rate;
+            const isLowStock = weight < 100;
+            
+            return (
+              <div key={item.materialId} className="col-12">
+                <div 
+                  className="bg-white p-3 p-md-4 rounded-4 shadow-sm border border-light transition-all hover-rise pointer"
+                  onClick={() => fetchMaterialHistory(item.materialId, item.materialName, item.materialNameHindi)}
+                >
+                  <div className="row g-2 g-md-0 align-items-center">
+                    {/* ASSET NAME */}
+                    <div className="col-12 col-md-4 col-lg-3 mb-2 mb-md-0">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className={`p-2 rounded-3 ${isLowStock ? 'bg-danger bg-opacity-10 text-danger' : 'bg-primary bg-opacity-10 text-primary'}`}>
+                          <Package size={20} />
+                        </div>
+                        <div>
+                          <h6 className="fw-black text-slate-900 m-0 text-capitalize">{item.materialName}</h6>
+                          <div className="d-flex align-items-center gap-2">
+                             <span className="text-slate-400 smaller fw-bold">{item.materialNameHindi || "General"}</span>
+                             <span className="badge bg-light text-muted border px-2 py-0 fw-normal smaller">#{item.materialId}</span>
                           </div>
-                          <div className="col-6 col-md-2 text-md-center border-end-md py-1 py-md-0">
-                             <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Market Rate</div>
-                             <div className="fw-black text-slate-900 m-0">₹{rate.toLocaleString('en-IN')}</div>
-                             <div className="smaller text-slate-300 fw-bold">Per Kilogram</div>
-                          </div>
-                          <div className="col-6 col-md-3 text-end text-md-center border-end-md py-1 py-md-0">
-                             <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Current Balance</div>
-                             <div className="h4 fw-black text-slate-900 m-0 tracking-tightest">{weight.toLocaleString()} <small className="text-slate-400 fw-medium smaller">kg</small></div>
-                          </div>
-                          <div className="col-12 col-md-3 text-center text-md-center py-2 py-md-0 bg-light bg-opacity-10 rounded-3">
-                             <div className="text-slate-400 smaller fw-black text-uppercase tracking-wider mb-1">Calculated Worth</div>
-                             <div className="h4 fw-black text-indigo-600 m-0">₹{Math.floor(value).toLocaleString('en-IN')}</div>
-                          </div>
-                          <div className="col-12 col-md-1 text-end d-none d-md-block">
-                             <div className="bg-slate-50 p-2 rounded-circle text-slate-400 d-inline-block hover-indigo transition-all">
-                                <ArrowRight size={20} />
-                             </div>
-                          </div>
-                       </div>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* MARKET RATE */}
+                    <div className="col-4 col-md-2 text-md-center">
+                      <div className="d-md-none text-muted smaller tracking-wider text-uppercase fw-bold mb-1">Rate</div>
+                      <div className="fw-bold text-slate-800">₹{rate.toLocaleString('en-IN')}</div>
+                    </div>
+
+                    {/* WEIGHT */}
+                    <div className="col-4 col-md-2 text-md-center">
+                      <div className="d-md-none text-muted smaller tracking-wider text-uppercase fw-bold mb-1">Balance</div>
+                      <div className={`fw-black ${isLowStock ? 'text-danger' : 'text-slate-900'}`}>
+                        {weight.toLocaleString()} <span className="small text-muted fw-medium">kg</span>
+                      </div>
+                      {isLowStock && <div className="smaller-xs text-danger fw-bold mt-1 d-none d-md-block">REPLENISH REQ.</div>}
+                    </div>
+
+                    {/* VALUATION */}
+                    <div className="col-4 col-md-3 text-end text-md-center">
+                      <div className="d-md-none text-muted smaller tracking-wider text-uppercase fw-bold mb-1">Worth</div>
+                      <div className="fw-black text-primary">₹{Math.floor(value).toLocaleString('en-IN')}</div>
+                    </div>
+
+                    {/* AUDIT ICON */}
+                    <div className="col-12 col-md-1 text-end d-none d-md-block">
+                      <div className="bg-light p-2 rounded-circle text-slate-400 transition-all hover-primary">
+                        <HistoryIcon size={18} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              );
-           })}
-           {filteredList.length === 0 && (
-             <div className="text-center py-5 bg-white rounded-4 shadow-sm">
-                <Package size={48} className="text-slate-100 mb-3" />
-                <h5 className="fw-black text-slate-400">0 RECORDS DETECTED</h5>
-             </div>
-           )}
+              </div>
+            );
+          })}
+          
+          {filteredList.length === 0 && (
+            <div className="col-12 text-center py-5 bg-white rounded-4 shadow-sm border border-dashed">
+              <Package size={40} className="text-slate-200 mb-2" />
+              <h6 className="fw-bold text-slate-400 m-0">NO MATCHING ASSETS FOUND</h6>
+            </div>
+          )}
         </div>
       )}
 
-      {/* LUXURY PRIME STYLE INJECTOR */}
+      {/* ANIMATION STYLES */}
       <style>{`
-        .hover-lift:hover { 
-          transform: translateY(-8px) scale(1.01); 
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; 
-        }
-        
+        .warehouse-terminal-container { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hover-rise:hover { transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05) !important; border-color: var(--primary) !important; }
+        .hover-primary:hover { background-color: var(--primary) !important; color: white !important; }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
       `}</style>
@@ -210,8 +263,8 @@ export default function InventoryPage() {
         isOpen={showSyncConfirm}
         onClose={() => setShowSyncConfirm(false)}
         onConfirm={handleSync}
-        title="Refresh Inventory Assets?"
-        message="This will re-calculate every material balance against your entire transaction history. This is an administrative process."
+        title="Administrative Re-Sync?"
+        message="This action re-calculates the entire global ledger for this location. Proceed with audit synchronization?"
         type="warning"
       />
 
