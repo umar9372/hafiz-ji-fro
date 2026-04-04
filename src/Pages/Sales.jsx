@@ -4,7 +4,8 @@ import { WorkshopContext } from "../Context";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import ConfirmModal from "../Components/ConfirmModal";
-import { Receipt, Trash2, PlusCircle, CheckCircle } from "lucide-react";
+import MediaModal from "../Components/MediaModal";
+import { Receipt, Trash2, PlusCircle, CheckCircle, Image as ImageIcon, Paperclip, Eye } from "lucide-react";
 
 function Sales() {
   const { loca, user } = useContext(WorkshopContext);
@@ -23,6 +24,11 @@ function Sales() {
   const [recordMonth, setRecordMonth] = useState(currentMonthStr);
   const [deleteId, setDeleteId] = useState(null);
   const [isSubmittingAll, setIsSubmittingAll] = useState(false);
+  const [transactionId, setTransactionId] = useState(crypto.randomUUID());
+  const [batchFiles, setBatchFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [viewingTransactionId, setViewingTransactionId] = useState(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   useEffect(() => {
     fetchVendors();
@@ -69,14 +75,14 @@ function Sales() {
       setVendorDetails(res.data);
 
       const mapped = res.data.materials.map(m => {
-          const initialRate = m.smartRate || m.customRate || m.defaultRate;
-          return {
-            ...m,
-            inputWeight: "",
-            inputRate: initialRate,
-            isSubmitting: false
-          };
-        });
+        const initialRate = m.smartRate || m.customRate || m.defaultRate;
+        return {
+          ...m,
+          inputWeight: "",
+          inputRate: initialRate,
+          isSubmitting: false
+        };
+      });
       setMaterialsData(mapped);
     } catch (err) {
       console.error("Error fetching vendor details:", err);
@@ -103,6 +109,31 @@ function Sales() {
     }));
   };
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const formData = new FormData();
+    files.forEach(file => formData.append("files", file));
+    formData.append("transactionId", transactionId);
+    formData.append("type", "SALE");
+
+    setIsUploading(true);
+    const toastId = toast.loading(`Uploading ${files.length} images...`);
+    try {
+      const res = await axios.post(`${loca}/files/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setBatchFiles(prev => [...prev, ...res.data.fileNames]);
+      toast.success("Media attached successfully", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Upload failed", { id: toastId });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmitRow = async (m) => {
     if (!m.inputWeight || m.inputWeight <= 0) return;
 
@@ -115,15 +146,14 @@ function Sales() {
         weight: parseFloat(m.inputWeight),
         rate: parseFloat(m.inputRate),
         recordMonth: recordMonth,
-        userName: user?.username || "system"
+        userName: user?.username || "system",
+        transactionId: transactionId
       };
 
-      await axios.post(`${loca}/sales`, payload, {
-        headers: { "Content-Type": "application/json" }
-      });
+      await axios.post(`${loca}/sales`, payload);
 
       toast.success(`Sold ${m.inputWeight}kg of ${m.materialName}`);
-      
+
       setMaterialsData(prev => prev.map(item => {
         if (item.materialId === m.materialId) {
           return { ...item, inputWeight: "", isSubmitting: false };
@@ -153,14 +183,17 @@ function Sales() {
         weight: parseFloat(m.inputWeight),
         rate: parseFloat(m.inputRate),
         recordMonth: recordMonth,
-        userName: user?.username || "system"
+        userName: user?.username || "system",
+        transactionId: transactionId
       }));
 
       await axios.post(`${loca}/sales/bulk`, payload);
-      
+
       toast.success(`Succesfully shipped ${itemsToSubmit.length} items!`, { id: toastId });
-      
+
       setMaterialsData(prev => prev.map(item => ({ ...item, inputWeight: "" })));
+      setBatchFiles([]);
+      setTransactionId(crypto.randomUUID());
       fetchSales();
     } catch (err) {
       toast.error("Bulk shipment failed: " + (err.response?.data?.message || err.message), { id: toastId });
@@ -172,13 +205,13 @@ function Sales() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-        await axios.delete(`${loca}/sales/${deleteId}`);
-        toast.success("Sale entry removed");
-        fetchSales();
+      await axios.delete(`${loca}/sales/${deleteId}`);
+      toast.success("Sale entry removed");
+      fetchSales();
     } catch (err) {
-        toast.error("Error deleting: " + err.message);
+      toast.error("Error deleting: " + err.message);
     } finally {
-        setDeleteId(null);
+      setDeleteId(null);
     }
   };
 
@@ -251,15 +284,15 @@ function Sales() {
                 </h5>
                 <div className="d-flex align-items-center gap-3">
                   {materialsData.some(m => m.inputWeight > 0) && (
-                    <button 
+                    <button
                       className="btn btn-warning btn-sm fw-bold px-3 shadow-sm border-white"
                       onClick={handleConfirmAll}
                       disabled={isSubmittingAll}
                     >
                       {isSubmittingAll ? "Processing..." : "Ship All Items"}
                     </button>
-                    )}
-                    <span className="badge bg-success px-3">{formatMonthName(recordMonth)}</span>
+                  )}
+                  <span className="badge bg-success px-3">{formatMonthName(recordMonth)}</span>
                 </div>
               </div>
               {/* DESKTOP VIEW */}
@@ -267,63 +300,84 @@ function Sales() {
                 <table className="table table-hover align-middle mb-0">
                   <thead className="table-light">
                     <tr className="small text-uppercase text-muted">
-                      <th className="ps-4" style={{ width: "25%" }}>Material</th>
-                      <th style={{ width: "20%" }}>Weight (kg)</th>
-                      <th style={{ width: "20%" }}>Rate (₹/kg)</th>
+                      <th className="ps-4" style={{ width: "30%" }}>Material</th>
+                      <th style={{ width: "25%" }}>Weight (kg)</th>
+                      <th style={{ width: "25%" }}>Rate (₹/kg)</th>
                       <th className="text-end" style={{ width: "20%" }}>Subtotal</th>
                       <th className="text-center" style={{ width: "15%" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {materialsData.length === 0 ? (
-                        <tr><td colSpan="5" className="text-center py-4 text-muted">No materials available.</td></tr>
+                      <tr><td colSpan="5" className="text-center py-4 text-muted">No materials available.</td></tr>
                     ) : (
-                        materialsData.map(m => {
+                      materialsData.map(m => {
                         const totalCost = (parseFloat(m.inputWeight || 0) * parseFloat(m.inputRate || 0)).toFixed(2);
                         const hasWeight = m.inputWeight && m.inputWeight > 0;
                         return (
-                            <tr key={m.materialId} className={hasWeight ? "table-success bg-opacity-10" : ""}>
+                          <tr key={m.materialId} className={hasWeight ? "table-success bg-opacity-10" : ""}>
                             <td className="ps-4 fw-bold text-dark text-capitalize">
-                                <div>{m.materialName}</div>
-                                {m.materialNameHindi && <div className="text-secondary small fw-normal">{m.materialNameHindi}</div>}
-                                <div style={{ fontSize: "0.7rem" }} className="text-muted fw-normal">Rate: ₹{m.inputRate}</div>
+                              <div>{m.materialName}</div>
+                              {m.materialNameHindi && <div className="text-secondary small fw-normal">{m.materialNameHindi}</div>}
+                              <div style={{ fontSize: "0.7rem" }} className="text-muted fw-normal">Rate: ₹{m.inputRate}</div>
                             </td>
                             <td>
-                                <input
+                              <input
                                 type="number"
                                 className="form-control form-control-sm fw-bold border-success"
                                 value={m.inputWeight}
                                 onChange={(e) => handleRowChange(m.materialId, "inputWeight", e.target.value)}
                                 placeholder="0.00"
-                                />
+                              />
                             </td>
                             <td>
-                                <div className="input-group input-group-sm">
+                              <div className="input-group input-group-sm">
                                 <span className="input-group-text bg-white opacity-50">₹</span>
                                 <input
-                                    type="number"
-                                    className="form-control form-control-sm"
-                                    value={m.inputRate}
-                                    onChange={(e) => handleRowChange(m.materialId, "inputRate", e.target.value)}
+                                  type="number"
+                                  className="form-control form-control-sm"
+                                  value={m.inputRate}
+                                  onChange={(e) => handleRowChange(m.materialId, "inputRate", e.target.value)}
                                 />
-                                </div>
+                              </div>
                             </td>
                             <td className="text-end fw-bold text-success">₹{totalCost}</td>
                             <td className="text-center">
-                                <button
+                              <button
                                 className={`btn btn-sm w-75 fw-bold shadow-sm ${hasWeight ? "btn-success" : "btn-light text-muted border"}`}
                                 disabled={!hasWeight || m.isSubmitting}
                                 onClick={() => handleSubmitRow(m)}
-                                >
+                              >
                                 {m.isSubmitting ? "..." : "Ship"}
-                                </button>
+                              </button>
                             </td>
-                            </tr>
+                          </tr>
                         )
-                        })
+                      })
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* BATCH MEDIA SECTION */}
+              <div className="bg-light p-3 border-top d-flex justify-content-between align-items-center">
+                <div className="d-flex align-items-center gap-3">
+                  <label className="btn btn-outline-dark btn-sm fw-bold px-3 d-flex align-items-center gap-2">
+                    <input type="file" multiple hidden accept="image/*" onChange={handleFileUpload} />
+                    <Paperclip size={16} /> Attach Shipment Media (Photos / Signatures)
+                  </label>
+                  <div className="d-flex gap-2">
+                    {batchFiles.map((f, i) => (
+                      <div key={i} className="position-relative">
+                        <img src={`${loca}/uploads/${f}`} alt="proof" className="rounded shadow-sm border" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
+                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success p-1">
+                          <CheckCircle size={8} />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {batchFiles.length > 0 && <small className="text-success fw-bold">{batchFiles.length} files attached</small>}
               </div>
 
               {/* MOBILE VIEW */}
@@ -338,39 +392,39 @@ function Sales() {
                         {m.materialNameHindi && <span className="text-secondary small">{m.materialNameHindi}</span>}
                       </div>
                       <div className="row g-2 align-items-center mb-1">
-                         <div className="col-4">
-                            <label className="small text-muted mb-1 d-block">Weight</label>
-                            <input 
-                              type="number" 
-                              className="form-control form-control-sm fw-bold border-success" 
-                              placeholder="0.0"
-                              value={m.inputWeight || ""}
-                              onChange={(e) => handleRowChange(m.materialId, "inputWeight", e.target.value)}
-                            />
-                         </div>
-                         <div className="col-4">
-                            <label className="small text-muted mb-1 d-block">Rate</label>
-                            <input 
-                              type="number" 
-                              className="form-control form-control-sm fw-bold border-success" 
-                              placeholder="0.0"
-                              value={m.inputRate || ""}
-                              onChange={(e) => handleRowChange(m.materialId, "inputRate", e.target.value)}
-                            />
-                         </div>
-                         <div className="col-4">
-                            <label className="small text-muted mb-1 d-block text-end">Amount</label>
-                            <div className="h6 fw-bold text-success mb-0 mt-1 text-end">₹{totalCost}</div>
-                         </div>
+                        <div className="col-4">
+                          <label className="small text-muted mb-1 d-block">Weight</label>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm fw-bold border-success"
+                            placeholder="0.0"
+                            value={m.inputWeight || ""}
+                            onChange={(e) => handleRowChange(m.materialId, "inputWeight", e.target.value)}
+                          />
+                        </div>
+                        <div className="col-4">
+                          <label className="small text-muted mb-1 d-block">Rate</label>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm fw-bold border-success"
+                            placeholder="0.0"
+                            value={m.inputRate || ""}
+                            onChange={(e) => handleRowChange(m.materialId, "inputRate", e.target.value)}
+                          />
+                        </div>
+                        <div className="col-4">
+                          <label className="small text-muted mb-1 d-block text-end">Amount</label>
+                          <div className="h6 fw-bold text-success mb-0 mt-1 text-end">₹{totalCost}</div>
+                        </div>
                       </div>
 
-                      <button 
+                      <button
                         className={`btn w-100 fw-bold py-2 ${hasWeight ? "btn-success shadow" : "btn-light border text-muted"}`}
                         disabled={!hasWeight || m.isSubmitting}
                         onClick={() => handleSubmitRow(m)}
                       >
-                         {m.isSubmitting ? <span className="spinner-border spinner-border-sm me-2"></span> : <PlusCircle size={18} className="me-2"/>}
-                         {hasWeight ? "Confirm Sale" : "Enter Weight"}
+                        {m.isSubmitting ? <span className="spinner-border spinner-border-sm me-2"></span> : <PlusCircle size={18} className="me-2" />}
+                        {hasWeight ? "Confirm Sale" : "Enter Weight"}
                       </button>
                     </div>
                   );
@@ -381,17 +435,17 @@ function Sales() {
 
           <div className="col-12">
             <div className="card shadow-sm border-0 border-start border-4 border-success">
-                <div className="card-body py-3 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 className="m-0 fw-bold text-muted small uppercase">Quick Summary - {formatMonthName(recordMonth)}</h6>
-                        <small className="text-muted">Viewing outbound dispatch logs for this customer</small>
-                    </div>
-                    <div className="text-end">
-                        <button className="btn btn-dark btn-sm fw-bold px-4" onClick={() => navigate(`/bill-details/sales/${selectedVendorId}/${recordMonth}`)}>
-                            <Receipt size={16} className="me-2" /> Generate Statement / Print Invoice
-                        </button>
-                    </div>
+              <div className="card-body py-3 d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 className="m-0 fw-bold text-muted small uppercase">Quick Summary - {formatMonthName(recordMonth)}</h6>
+                  <small className="text-muted">Viewing outbound dispatch logs for this customer</small>
                 </div>
+                <div className="text-end">
+                  <button className="btn btn-dark btn-sm fw-bold px-4" onClick={() => navigate(`/bill-details/sales/${selectedVendorId}/${recordMonth}`)}>
+                    <Receipt size={16} className="me-2" /> Generate Statement / Print Invoice
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -437,75 +491,68 @@ function Sales() {
       {/* ITEMIZED BREAKDOWN (History) */}
       {selectedVendorId && (
         <div className="card shadow border-0 mt-4 mb-5 overflow-hidden">
-            <div className="card-header bg-white py-3 border-bottom">
-                <h6 className="m-0 fw-bold text-dark text-uppercase small">Recent Dispatch Records for {formatMonthName(recordMonth)}</h6>
-            </div>
+          <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 className="m-0 fw-bold text-dark text-uppercase small">Recent Dispatch Records for {formatMonthName(recordMonth)}</h6>
+            {vendorSales.filter(s => s.recordMonth === recordMonth && s.transactionId).length > 0 && (
+              <button
+                onClick={() => {
+                  const ids = [...new Set(vendorSales.filter(s => s.recordMonth === recordMonth).map(s => s.transactionId).filter(Boolean))];
+                  setViewingTransactionId(ids);
+                  setShowMediaModal(true);
+                }}
+                className="btn btn-sm btn-primary d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
+              >
+                <ImageIcon size={16} /> View All Media
+              </button>
+            )}
+          </div>
 
-            {/* DESKTOP TABLE */}
-            <div className="table-responsive desktop-only">
-                <table className="table table-hover align-middle mb-0">
-                    <thead className="table-light small text-uppercase text-muted">
-                        <tr>
-                            <th className="ps-4" style={{width: '20%'}}>Date</th>
-                            <th style={{width: '20%'}}>Material</th>
-                            <th className="text-center" style={{width: '15%'}}>Weight</th>
-                            <th className="text-end" style={{width: '15%'}}>Amount</th>
-                            <th className="text-center" style={{width: '15%'}}>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {vendorSales.filter(s => s.recordMonth === recordMonth).length === 0 ? (
-                            <tr><td colSpan="5" className="text-center py-5 text-muted fst-italic">No records found.</td></tr>
-                        ) : (
-                             vendorSales.filter(s => s.recordMonth === recordMonth).map((s, idx) => (
-                                <tr key={idx}>
-                                    <td className="ps-4">
-                                        <div className="fw-bold text-dark small">{new Date(s.saleDate).toLocaleDateString()}</div>
-                                        <small className="text-muted">ID: #{s.id}</small>
-                                    </td>
-                                    <td>
-                                        <div className="badge bg-light text-dark border fw-bold text-capitalize px-3">
-                                            {s.materialName}
-                                            {s.materialNameHindi && <div className="text-secondary x-small fw-normal">{s.materialNameHindi}</div>}
-                                        </div>
-                                    </td>
-                                    <td className="text-center fw-bold text-success">{s.weight.toFixed(2)} kg</td>
-                                    <td className="text-end fw-bold text-dark">₹{s.amount.toLocaleString()}</td>
-                                    <td className="text-center">
-                                        <button className="btn btn-sm btn-outline-danger border-0 rounded-circle" onClick={() => handleDeleteRecord(s.id)}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+          {/* SCROLLABLE TABLE (WORKS FOR BOTH DESKTOP & MOBILE) */}
+          <div className="table-responsive border-0" style={{ overflowX: 'auto' }}>
+            <table className="table table-hover align-middle mb-0" style={{ minWidth: window.innerWidth < 768 ? '850px' : 'auto' }}>
+              <thead className="table-dark">
+                <tr className="smaller text-uppercase fw-black bg-dark">
+                  <th className="ps-4 py-3" style={{ width: '90px' }}>Date</th>
+                  <th className="py-3">Customer & Sales Details</th>
+                  <th className="text-center py-3" style={{ width: '120px' }}>Dispatch (kg)</th>
+                  <th className="text-end py-3" style={{ width: '150px' }}>Total Amount</th>
+                  <th className="text-center py-3" style={{ width: '120px' }}>Payment Status</th>
+                  <th className="text-center py-3" style={{ width: '60px' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendorSales.filter(s => s.recordMonth === recordMonth).length === 0 ? (
+                  <tr><td colSpan="6" className="text-center py-5 text-muted fst-italic">No records found.</td></tr>
+                ) : (
+                  vendorSales.filter(s => s.recordMonth === recordMonth).map((s, idx) => (
+                    <tr key={idx} className="border-bottom border-light">
+                      <td className="ps-4 py-3">
+                        <div className="fw-black text-dark smaller">{new Date(s.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
+                        <small className="text-muted smaller opacity-75">ID: #{s.id}</small>
+                      </td>
+                      <td className="py-3">
+                        <div className="fw-black text-dark text-capitalize smaller mb-0 lh-1">{s.materialName}</div>
+                        {s.materialNameHindi && <small className="text-muted smaller lh-1 opacity-75">{s.materialNameHindi}</small>}
+                      </td>
+                      <td className="text-center py-3 fw-bold text-success smaller">{s.weight.toFixed(2)} <span className="smaller opacity-50 fs-6">kg</span></td>
+                      <td className="text-end py-3 fw-black text-dark fs-5">₹{s.amount.toLocaleString()}</td>
+                      <td className="text-center py-3">
+                        <span className={`badge rounded-pill smaller fw-bold tracking-tighter ${s.status === 'PAID' ? 'bg-soft-success text-success border border-success border-opacity-25' : s.status === 'PARTIAL' ? 'bg-soft-warning text-warning border border-warning border-opacity-25' : 'bg-soft-danger text-danger border border-danger border-opacity-25'}`} style={{ fontSize: '0.65rem', padding: '0.3rem 0.6rem' }}>
+                          {s.status || "PENDING"}
+                        </span>
+                      </td>
+                      <td className="text-center py-3">
+                        <button className="btn btn-sm btn-outline-danger border-0 rounded-circle shadow-sm" onClick={() => handleDeleteRecord(s.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-            {/* MOBILE LIST */}
-            <div className="mobile-only">
-                {(() => {
-                    const filtered = vendorSales.filter(p => p.recordMonth === recordMonth);
-                    if (filtered.length === 0) return <div className="p-4 text-center text-muted">No sales recorded.</div>;
-                    return filtered.map((p, idx) => (
-                        <div key={idx} className="p-3 border-bottom d-flex justify-content-between align-items-center bg-white shadow-sm mb-1">
-                            <div>
-                                <div className="fw-bold text-dark text-capitalize">
-                                    {p.materialName} {p.materialNameHindi && <span className="text-secondary small ms-1">({p.materialNameHindi})</span>}
-                                </div>
-                                <div className="text-success fw-bold small">₹{p.amount.toLocaleString()}</div>
-                            </div>
-                            <div className="text-end">
-                                <div className="fw-bold text-dark mb-1">{p.weight.toFixed(2)} kg</div>
-                                <button className="btn btn-sm btn-outline-danger border-0 p-1" onClick={() => handleDeleteRecord(p.id)}>
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        </div>
-                    ));
-                })()}
-            </div>
         </div>
       )}
 
@@ -517,44 +564,72 @@ function Sales() {
           </div>
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead className="table-light small text-uppercase text-muted">
+              <thead className="table-light small text-uppercase fw-bold text-muted bg-light">
                 <tr>
                   <th className="ps-4">Cycle</th>
-                  <th>Buyer / Customer</th>
+                  <th>Buyer / Partner</th>
                   <th className="text-center">Total Dispatch (kg)</th>
+                  <th className="text-center">Payment Status</th>
                   <th className="text-end pe-4">Revenue Collected</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.values(sales.reduce((acc, s) => {
                   const key = `${s.recordMonth}-${s.vendorName}`;
-                  if (!acc[key]) acc[key] = { month: s.recordMonth, name: s.vendorName, weight: 0, amount: 0, id: s.vendorId };
+                  const status = (s.status || "PENDING").toUpperCase();
+                  if (!acc[key]) {
+                    acc[key] = { month: s.recordMonth, name: s.vendorName, weight: 0, amount: 0, id: s.vendorId, statuses: [] };
+                  }
                   acc[key].weight += s.weight;
                   acc[key].amount += s.amount;
+                  acc[key].statuses.push(status);
                   return acc;
-                }, {})).sort((a, b) => b.month.localeCompare(a.month)).map((bill, idx) => (
-                  <tr key={idx} className="cursor-pointer" onClick={() => navigate(`/bill-details/sales/${bill.id}/${bill.month}`)} title="Click to view full invoice">
-                    <td className="ps-4"><span className="badge bg-light text-dark border rounded-pill">{formatMonthName(bill.month)}</span></td>
-                    <td className="fw-bold text-dark">{bill.name}</td>
-                    <td className="text-center fw-bold">{bill.weight.toFixed(2)} kg</td>
-                    <td className="text-end pe-4 fw-bold text-success">₹{bill.amount.toLocaleString()}</td>
+                }, {})).map(bill => {
+                  const unique = [...new Set(bill.statuses)];
+                  let finalStatus = "PENDING";
+                  if (unique.length === 1 && unique[0] === "PAID") finalStatus = "PAID";
+                  else if (unique.includes("PAID") || unique.includes("PARTIAL")) finalStatus = "PARTIAL";
+                  return { ...bill, finalStatus };
+                }).sort((a, b) => b.month.localeCompare(a.month)).map((bill, idx) => (
+                  <tr key={idx} className="cursor-pointer border-bottom border-light" onClick={() => navigate(`/bill-details/sales/${bill.id}/${bill.month}`)} title="Click to view full invoice">
+                    <td className="ps-4 py-3"><span className="badge bg-light text-dark border rounded-pill">{formatMonthName(bill.month)}</span></td>
+                    <td className="fw-bold text-dark py-3">{bill.name}</td>
+                    <td className="text-center fw-bold text-secondary py-3">{bill.weight.toFixed(2)} kg</td>
+                    <td className="text-center py-3">
+                      <span className={`badge rounded-pill smaller px-3 py-2 fw-bold ${bill.finalStatus === 'PAID' ? 'bg-soft-success text-success' : bill.finalStatus === 'PARTIAL' ? 'bg-soft-warning text-warning' : 'bg-soft-danger text-danger'}`}>
+                        {bill.finalStatus}
+                      </span>
+                    </td>
+                    <td className="text-end pe-4 fw-bold text-success py-3 fs-6">₹{bill.amount.toLocaleString()}</td>
                   </tr>
                 ))}
                 {sales.length === 0 && (
-                  <tr><td colSpan="4" className="text-center py-5 text-muted fst-italic">No outbound records found</td></tr>
+                  <tr><td colSpan="5" className="text-center py-5 text-muted fst-italic">No outbound records found</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
       )}
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}
         title="Delete Sale Record?"
         message="Are you sure you want to remove this sales entry? This will update your inventory."
         type="danger"
+      />
+      <style>{`
+          .smaller { font-size: 0.75rem !important; }
+          .bg-soft-success { background-color: #dcfce7; }
+          .bg-soft-warning { background-color: #fef9c3; }
+          .bg-soft-danger { background-color: #fee2e2; }
+      `}</style>
+      <MediaModal
+        isOpen={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        transactionId={viewingTransactionId}
+        loca={loca}
       />
     </div>
   );

@@ -3,7 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { WorkshopContext } from "../Context";
 import toast from "react-hot-toast";
-import { Printer, ArrowLeft, Download, FileText, User, Calendar, Receipt, ImageIcon } from "lucide-react";
+import { Printer, ArrowLeft, Download, FileText, User, Calendar, Receipt, ImageIcon, Eye, ChevronDown } from "lucide-react";
+import MediaModal from "../Components/MediaModal";
+import ConfirmModal from "../Components/ConfirmModal";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
@@ -14,6 +16,9 @@ export default function BillDetails() {
   const [records, setRecords] = useState([]);
   const [partner, setPartner] = useState(null);
   const [showRates, setShowRates] = useState(true);
+  const [viewingTransactionId, setViewingTransactionId] = useState(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [showLinkingConfirm, setShowLinkingConfirm] = useState(false);
 
   const printRef = useRef();
 
@@ -64,6 +69,23 @@ export default function BillDetails() {
   };
 
 
+
+  const handleCreateMediaLink = async () => {
+    const newId = crypto.randomUUID();
+    const toastId = toast.loading("Creating media link for this statement...");
+    try {
+      const endpoint = type.startsWith("p") ? "/purchases" : "/sales";
+      await axios.put(`${loca}${endpoint}/transaction?${type.startsWith("p") ? "supplierId" : "vendorId"}=${id}&recordMonth=${month}&transactionId=${newId}`);
+
+      toast.success("Media link created! You can now add images.", { id: toastId });
+      fetchBillData(); // Refresh so records have the new ID
+      setViewingTransactionId(newId);
+      setShowMediaModal(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create media link", { id: toastId });
+    }
+  };
 
   const handleDownloadPDF = async () => {
     const toastId = toast.loading("Preparing PDF...");
@@ -199,6 +221,21 @@ export default function BillDetails() {
           <button className="btn btn-outline-primary d-flex align-items-center gap-2 shadow-sm" onClick={handleDownloadImage}>
             <ImageIcon size={16} /> <span className="d-none d-sm-inline">Image</span>
           </button>
+          {/* Always show the Proof button */}
+          <button className="btn btn-dark d-flex align-items-center gap-2 shadow-sm fw-bold border-2" onClick={async () => {
+            // Extract all unique transactionIds
+            const existingIds = [...new Set(records.map(r => r.transactionId).filter(Boolean))];
+
+            if (existingIds.length > 0) {
+              setViewingTransactionId(existingIds);
+              setShowMediaModal(true);
+            } else if (records.length > 0) {
+              // No records have a transactionId—generate a new one and link them all!
+              setShowLinkingConfirm(true);
+            }
+          }}>
+            <ImageIcon size={16} /> View/Add Proofs
+          </button>
         </div>
       </div>
 
@@ -229,9 +266,9 @@ export default function BillDetails() {
                 <h4 className="text-uppercase fw-black text-slate-400 mb-0 ls-wide bill-title-text">
                   {type === "purchase" ? "Purchase Statement" : "Tax Invoice"}
                 </h4>
-                <div className="fw-bold text-dark fs-5 mt-1">
+                {/* <div className="fw-bold text-dark fs-5 mt-1">
                   #ST-{month.replace('-', '')}-{id.toString().padStart(3, '0')}
-                </div>
+                </div> */}
               </div>
 
               <div className="mt-4">
@@ -242,7 +279,7 @@ export default function BillDetails() {
           </div>
 
           {/* Account & Cycle Info Block (Modern Grid) */}
-          <div className="row mb-5 g-0 border rounded-3 overflow-hidden bg-light bg-opacity-50">
+          <div className="row mb-5 g-0 border rounded-3 bg-light bg-opacity-50" style={{ position: 'relative', zIndex: 10 }}>
             <div className="col-7 p-4 border-end">
               <p className="text-muted smaller text-uppercase fw-black mb-3 ls-wide">Billed To / Provider</p>
               <div className="ps-1">
@@ -256,14 +293,31 @@ export default function BillDetails() {
             <div className="col-5 p-4 bg-white">
               <div className="mb-3 d-print-none">
                 <p className="text-muted smaller text-uppercase fw-black mb-1 ls-wide">Payment Status</p>
-                <div className="dropdown">
-                  <button className={`btn btn-sm px-3 py-1 fw-black rounded-pill border-0 ${records[0]?.status === 'PAID' ? 'bg-success text-white' : records[0]?.status === 'PARTIAL' ? 'bg-warning text-dark' : 'bg-danger text-white'}`} type="button" data-bs-toggle="dropdown">
-                    {records[0]?.status || "UNPAID"}
+                <div className="dropdown w-fit">
+                  <button
+                    className={`btn btn-sm px-2 py-1 fw-bold rounded-pill border-0 dropdown-toggle d-flex align-items-center gap-1 shadow-sm status-dropdown-btn ${records[0]?.status === 'PAID' ? 'bg-success text-white' : records[0]?.status === 'PARTIAL' ? 'bg-warning text-dark' : 'bg-danger text-white'}`}
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span className="dropdown-label-text">{records[0]?.status || "UNPAID"}</span>
+                    <ChevronDown size={12} className="opacity-75" />
                   </button>
-                  <ul className="dropdown-menu shadow border-0">
-                    <li><button className="dropdown-item small fw-bold" onClick={() => updateStatus('PENDING')}>SET UNPAID</button></li>
-                    <li><button className="dropdown-item small fw-bold" onClick={() => updateStatus('PARTIAL')}>SET PARTIAL</button></li>
-                    <li><button className="dropdown-item small fw-bold" onClick={() => updateStatus('PAID')}>SET PAID</button></li>
+                  <ul className="dropdown-menu shadow-lg border-0 rounded-3 mt-1 py-1 dropdown-menu-end" style={{ maxHeight: '200px', overflowY: 'auto', zIndex: 9999 }}>
+                    <li className="px-2 py-1 small fw-black text-muted text-uppercase tracking-widest" style={{ fontSize: '0.6rem' }}>Change Status</li>
+                    <li><hr className="dropdown-divider my-1 opacity-50" /></li>
+                    <li><button className="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" onClick={() => updateStatus('PENDING')}>
+                      <span className="p-1 rounded-circle bg-danger" style={{ width: 8, height: 8 }}></span>
+                      <span className="fw-bold">Mark as Unpaid</span>
+                    </button></li>
+                    <li><button className="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" onClick={() => updateStatus('PARTIAL')}>
+                      <span className="p-1 rounded-circle bg-warning" style={{ width: 8, height: 8 }}></span>
+                      <span className="fw-bold">Mark as Partial</span>
+                    </button></li>
+                    <li><button className="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" onClick={() => updateStatus('PAID')}>
+                      <span className="p-1 rounded-circle bg-success" style={{ width: 8, height: 8 }}></span>
+                      <span className="fw-bold">Mark as Paid</span>
+                    </button></li>
                   </ul>
                 </div>
               </div>
@@ -362,6 +416,27 @@ export default function BillDetails() {
       </div>
 
       <style>{`
+        .fw-black { font-weight: 900 !important; }
+        .ls-wide { letter-spacing: 0.1em; }
+        .tracking-tighter { letter-spacing: -0.05em; }
+        .w-fit { width: fit-content; }
+        .status-dropdown-btn { 
+          min-width: 90px;
+          justify-content: center;
+          font-size: 0.75rem;
+        }
+        @media (max-width: 768px) {
+          .status-dropdown-btn {
+             min-width: 70px;
+             padding: 2px 8px !important;
+             font-size: 0.65rem !important;
+          }
+          .dropdown-label-text {
+             max-width: 50px;
+             overflow: hidden;
+             text-overflow: ellipsis;
+          }
+        }
         @media print {
             body { background: white !important; }
             .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
@@ -383,6 +458,20 @@ export default function BillDetails() {
           .bill-volume-text { font-size: 0.8rem !important; white-space: nowrap !important; }
         }
       `}</style>
+      <MediaModal
+        isOpen={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        transactionId={viewingTransactionId}
+        loca={loca}
+      />
+      <ConfirmModal
+        isOpen={showLinkingConfirm}
+        onClose={() => setShowLinkingConfirm(false)}
+        onConfirm={handleCreateMediaLink}
+        title="Initialize Media Link"
+        message="This previous month bill doesn't have a media link yet. Would you like to create one so you can attach photos to it?"
+        type="warning"
+      />
     </div>
   );
 }

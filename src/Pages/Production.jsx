@@ -14,6 +14,7 @@ export default function Production() {
   // Form State
   const [form, setForm] = useState({
     materialId: "",
+    sourceMaterialId: "",
     weight: "",
     date: new Date().toISOString().split(".")[0], // YYYY-MM-DDTHH:mm:ss
     notes: ""
@@ -50,6 +51,7 @@ export default function Production() {
     setEditId(prod.id);
     setForm({
       materialId: prod.materialId,
+      sourceMaterialId: prod.sourceMaterialId || "",
       weight: prod.weight,
       date: prod.date,
       notes: prod.notes
@@ -82,6 +84,7 @@ export default function Production() {
     try {
       const params = new URLSearchParams();
       params.append("materialId", form.materialId);
+      if (form.sourceMaterialId) params.append("sourceMaterialId", form.sourceMaterialId);
       params.append("weight", form.weight);
       params.append("date", form.date);
       params.append("notes", form.notes);
@@ -97,6 +100,7 @@ export default function Production() {
       setEditId(null);
       setForm({
         materialId: "",
+        sourceMaterialId: "",
         weight: "",
         date: new Date().toISOString().split(".")[0],
         notes: ""
@@ -163,8 +167,8 @@ export default function Production() {
                 <table className="table table-hover align-middle mb-0">
                    <thead className="bg-light">
                       <tr className="small text-muted text-uppercase fw-bold">
-                         <th className="ps-4">Material</th>
-                         <th className="text-center">Weight Produce</th>
+                         <th className="ps-4">Production Details</th>
+                         <th className="text-center">Weight</th>
                          <th className="text-center">Record Date</th>
                          <th className="ps-3">Notes</th>
                          <th className="text-end pe-4">Actions</th>
@@ -172,14 +176,26 @@ export default function Production() {
                    </thead>
                    <tbody>
                       {productions.map((p) => (
-                         <tr key={p.id}>
-                            <td className="ps-4">
-                               <div className="fw-bold text-dark">{p.materialName}</div>
-                               <small className="text-muted">ID: #PROD-{p.id}</small>
-                            </td>
-                            <td className="text-center fw-black text-success fs-6">
-                               +{p.weight.toLocaleString()} kg
-                            </td>
+                          <tr key={p.id}>
+                             <td className="ps-4">
+                                <div className="d-flex align-items-center gap-2">
+                                    {p.sourceMaterialName ? (
+                                        <>
+                                            <span className="text-muted small">From:</span>
+                                            <span className="fw-bold text-danger text-decoration-line-through">{p.sourceMaterialName}</span>
+                                            <Zap size={14} className="text-warning" />
+                                            <span className="text-muted small">To:</span>
+                                            <span className="fw-bold text-success">{p.materialName}</span>
+                                        </>
+                                    ) : (
+                                        <div className="fw-bold text-dark">{p.materialName}</div>
+                                    )}
+                                </div>
+                                <small className="text-muted">ID: #PROD-{p.id}</small>
+                             </td>
+                             <td className="text-center fw-black text-success fs-6">
+                                {p.sourceMaterialName ? "" : "+"} {p.weight.toLocaleString()} kg
+                             </td>
                             <td className="text-center small text-muted">
                                {new Date(p.date).toLocaleDateString()}
                             </td>
@@ -222,24 +238,42 @@ export default function Production() {
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="modal-body p-4">
-                  <div className="mb-4">
-                    <label className="form-label small fw-bold text-muted text-uppercase">Select Material</label>
-                    <div className="input-group">
-                       <span className="input-group-text bg-light border-end-0"><Layers size={18} /></span>
-                       <select 
-                        className="form-select bg-light border-start-0" 
-                        required 
-                        value={form.materialId} 
-                        onChange={(e) => setForm({...form, materialId: e.target.value})}
-                       >
-                        <option value="">Choose material...</option>
-                        {materials.map(m => <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>)}
-                      </select>
+                  <div className="row g-3 mb-4">
+                    <div className="col-6">
+                        <label className="form-label small fw-bold text-muted text-uppercase">From Material (Source)</label>
+                        <select 
+                            className="form-select bg-light border-0 shadow-sm" 
+                            style={{ borderRadius: '10px' }}
+                            value={form.sourceMaterialId} 
+                            onChange={(e) => setForm({...form, sourceMaterialId: e.target.value})}
+                        >
+                            <option value="">No Source (Internal Gain)</option>
+                            {materials.map(m => <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>)}
+                        </select>
+                        <div className="form-text smaller">Reduces stock of this material</div>
+                    </div>
+                    <div className="col-6">
+                        <label className="form-label small fw-bold text-muted text-uppercase">To Material (Target)</label>
+                        <select 
+                            className="form-select bg-light border-0 shadow-sm" 
+                            required 
+                            style={{ borderRadius: '10px' }}
+                            value={form.materialId} 
+                            onChange={(e) => setForm({...form, materialId: e.target.value})}
+                        >
+                            <option value="">Choose material...</option>
+                            {materials.map(m => (
+                                <option key={m.id} value={m.id} disabled={m.id == form.sourceMaterialId}>
+                                    {m.name.toUpperCase()}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="form-text smaller">Increases stock of this material</div>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <label className="form-label small fw-bold text-muted text-uppercase">Quantity Produced (kg)</label>
+                    <label className="form-label small fw-bold text-muted text-uppercase">Quantity (kg)</label>
                     <div className="input-group">
                        <span className="input-group-text bg-light border-end-0"><Plus size={18} /></span>
                        <input 

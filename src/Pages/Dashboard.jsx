@@ -5,6 +5,8 @@ import axios from "axios";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { PackageSearch, TrendingUp, TrendingDown, IndianRupee, Bell, ArrowRight, Layers, Users, Zap, BrainCircuit, Sparkles, ArrowUpRight, ArrowDownRight, Wallet, Info } from "lucide-react";
 
+import toast from "react-hot-toast";
+
 export default function Dashboard() {
   const { loca } = useContext(WorkshopContext);
   const navigate = useNavigate();
@@ -379,72 +381,113 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="table-responsive">
+            {/* DESKTOP VIEW */}
+            <div className="table-responsive d-none d-lg-block">
               <table className="table table-borderless align-middle mb-0">
                 <thead>
-                  <tr className="border-bottom text-muted small text-uppercase letter-spacing-1 fw-bold">
+                  <tr className="border-bottom text-muted small text-uppercase letter-spacing-1 fw-black">
                     <th className="ps-0 py-3" style={{ width: '40%' }}>Strategic Partner</th>
-                    <th className="text-center py-3">Performance Trend</th>
-                    <th className="text-end py-3 pe-0">Monthly Status</th>
+                    <th className="text-center py-3">Growth Momentum</th>
+                    <th className="text-end py-3 pe-0">Executive Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonData.map((p, idx) => (
                     <tr key={idx} className="border-bottom border-light">
-                      <td className="ps-0 py-3">
+                      <td className="ps-0 py-4">
                         <div className="d-flex align-items-center gap-3">
-                          <div className="bg-indigo bg-opacity-10 text-indigo rounded-4 d-flex align-items-center justify-content-center fw-bold shadow-sm" style={{ width: 44, height: 44, fontSize: '1rem', color: '#6366f1' }}>
+                          <div className={`rounded-4 d-flex align-items-center justify-content-center fw-black shadow-sm text-white ${p.statusColor === 'success' ? 'bg-success' : p.statusColor === 'danger' ? 'bg-danger' : 'bg-primary'}`} style={{ width: 44, height: 44, fontSize: '1.2rem' }}>
                             {p.name.charAt(0)}
                           </div>
                           <div>
-                            <div className="fw-bold text-dark fs-6">{p.name}</div>
-                            <div className="small text-muted d-flex align-items-center gap-2">
-                              <span>Total: ₹{p.current.toLocaleString()}</span>
+                            <div className="fw-black text-dark fs-6 text-uppercase tracking-tighter">{p.name}</div>
+                            <div className="small text-muted d-flex align-items-center gap-2 mt-1">
+                              <span className="fw-bold">Current: ₹{p.current.toLocaleString()}</span>
                               <span className="opacity-25">|</span>
-                              <span className={`text-${parseFloat(p.growth) >= 0 ? 'success' : 'danger'} fw-bold`}>
-                                {parseFloat(p.growth) >= 0 ? '+' : ''}{p.growth}%
-                              </span>
+                              <span className="opacity-75">Prev: ₹{p.previous.toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="text-center" style={{ minWidth: '220px' }}>
                         <div className="px-4">
-                          <div className="d-flex justify-content-between mb-1 smaller fw-bold text-muted opacity-75">
-                            <span>{lastMonthStr}</span>
-                            <span>{currentMonthStr}</span>
+                          <div className="d-flex justify-content-between mb-2 smaller fw-black text-uppercase tracking-widest opacity-50">
+                            <span className={`text-${parseFloat(p.growth) >= 0 ? 'success' : 'danger'}`}>
+                              {parseFloat(p.growth) >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {p.growth}%
+                            </span>
+                            <span>Goal Track</span>
                           </div>
-                          <div className="progress bg-light" style={{ height: '6px', borderRadius: '3px' }}>
-                            {/* Last Month Marker */}
+                          <div className="progress overflow-visible bg-light position-relative" style={{ height: '8px', borderRadius: '4px' }}>
                             <div
-                              className="progress-bar opacity-25"
-                              style={{ width: `${(p.previous / (Math.max(p.previous, p.current) || 1)) * 100}%`, backgroundColor: '#cbd5e1' }}
+                              className={`progress-bar rounded-pill shadow-sm bg-${p.statusColor}`}
+                              style={{ width: `${Math.min(100, (p.current / (Math.max(p.previous, p.current) || 1)) * 100)}%` }}
                             ></div>
-                          </div>
-                          <div className="progress bg-transparent" style={{ height: '6px', borderRadius: '3px', marginTop: '-6px' }}>
-                            {/* Current Month Gain/Loss */}
-                            <div
-                              className={`progress-bar shadow-sm rounded-pill`}
-                              style={{ width: `${(p.current / (Math.max(p.previous, p.current) || 1)) * 100}%`, backgroundColor: '#6366f1' }}
-                            ></div>
+                            {/* Marker for previous month */}
+                            <div className="position-absolute top-0 h-100" style={{ left: `${(p.previous / (Math.max(p.previous, p.current) || 1)) * 100}%`, width: '2px', backgroundColor: '#000', opacity: 0.2 }}></div>
                           </div>
                         </div>
                       </td>
                       <td className="text-end pe-0">
                         <div className="d-flex flex-column align-items-end">
-                          <div className={`badge rounded-pill px-3 py-2 small mb-1 shadow-sm bg-${p.statusColor} text-white`}>
+                          <div className={`badge rounded-pill px-3 py-2 smaller fw-black mb-1 shadow-sm border border-2 border-white bg-${p.statusColor} text-white text-uppercase tracking-widest`}>
                             {p.status}
                           </div>
-                          <div className="small text-muted opacity-75 d-flex align-items-center gap-1">
-                            {parseFloat(p.growth) >= 0 ? <TrendingUp size={12} className="text-success" /> : <TrendingDown size={12} className="text-danger" />}
-                            {Math.abs(p.growth)}% change
-                          </div>
+                          <div className="smaller text-muted opacity-50 fw-bold">Performance Index</div>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* MOBILE VIEW (CARDS) */}
+            <div className="d-lg-none d-flex flex-column gap-3">
+              {comparisonData.map((p, idx) => (
+                <div key={idx} className="p-3 border rounded-4 bg-white shadow-sm">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="d-flex align-items-center gap-2">
+                      <div className={`rounded-circle bg-${p.statusColor} text-white d-flex align-items-center justify-content-center fw-black`} style={{ width: 32, height: 32, fontSize: '0.8rem' }}>
+                        {p.name.charAt(0)}
+                      </div>
+                      <h6 className="fw-black m-0 text-dark text-uppercase smaller tracking-tight">{p.name}</h6>
+                    </div>
+                    <div className={`badge rounded-pill px-2 py-1 smaller bg-${p.statusColor} text-white fw-black text-uppercase`}>
+                      {p.status}
+                    </div>
+                  </div>
+                  <div className="row g-2 text-center mb-0">
+                    <div className="col-4 border-end px-1">
+                      <div style={{
+                        backgroundColor: "#e0e7ff",
+                        color: "#4338ca",
+                        fontSize: "0.52rem",
+                        padding: "2px 4px"
+                      }} className="badge smaller fw-black text-uppercase border-0 mb-1">Current</div>
+                      <div className="fw-black text-dark smaller">₹{p.current.toLocaleString()}</div>
+                    </div>
+                    <div className="col-4 border-end px-1">
+                      <div style={{
+                        backgroundColor: "#acadb0ff",
+                        color: "#515050ff",
+                        fontSize: "0.52rem",
+                        padding: "2px 4px"
+                      }} className="badge   smaller fw-black text-uppercase border mb-1">Previous</div>
+                      <div className="fw-black text-muted smaller">₹{p.previous.toLocaleString()}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{
+                        color: "#3b2626ff",
+                        fontSize: "0.52rem",
+                        padding: "2px 4px",
+                      }} className="smaller  text-uppercase fw-bold  mb-1">Growth</div>
+                      <div className={`fw-black smaller text-${parseFloat(p.growth) >= 0 ? 'success' : 'danger'}`}>
+                        {parseFloat(p.growth) >= 0 ? '+' : ''}{p.growth}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -507,21 +550,51 @@ export default function Dashboard() {
         <div className="col-12 col-lg-8">
           <div className="card border-0 shadow-sm h-100 p-4 bg-white">
             <h5 className="fw-bold mb-4 text-dark">Revenue vs Buying Spend (Monthly Trend)</h5>
-            <div style={{ width: '100%', height: 350 }}>
-              <ResponsiveContainer>
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `₹${value}`} />
-                  <Tooltip
-                    cursor={{ stroke: '#10b981', strokeWidth: 2 }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                  />
-                  <Legend iconType="circle" />
-                  <Line type="monotone" dataKey="revenue" name="Total Monthly Revenue" stroke="#10b981" strokeWidth={4} dot={{ r: 6, fill: "#10b981" }} activeDot={{ r: 10 }} />
-                  <Line type="monotone" dataKey="spend" name="Total Monthly Purchases" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: "#ef4444" }} activeDot={{ r: 10 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="chart-container" style={{ width: '100%', height: window.innerWidth < 768 ? 280 : 350 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: window.innerWidth < 768 ? 9 : 12, fontWeight: 600 }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: window.innerWidth < 768 ? 9 : 12, fontWeight: 600 }}
+                      tickFormatter={(value) => `₹${value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value}`}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: '#10b981', strokeWidth: 2 }}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                    />
+                    <Legend
+                      iconType="circle"
+                      wrapperStyle={{ paddingTop: '20px', fontSize: window.innerWidth < 768 ? '10px' : '14px', fontWeight: 'bold' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      name="Revenue"
+                      stroke="#10b981"
+                      strokeWidth={window.innerWidth < 768 ? 2 : 4}
+                      dot={{ r: window.innerWidth < 768 ? 2 : 5, fill: "#10b981" }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="spend"
+                      name="Spend"
+                      stroke="#ef4444"
+                      strokeWidth={window.innerWidth < 768 ? 2 : 4}
+                      dot={{ r: window.innerWidth < 768 ? 2 : 5, fill: "#ef4444" }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -573,47 +646,81 @@ export default function Dashboard() {
         <div className="col-12">
           <div className="card border-0 shadow-sm p-4 bg-white">
             <h5 className="fw-bold mb-4 text-dark">Recent Account Summaries (Bills)</h5>
-            <div className="table-responsive">
-              <table className="table table-hover align-middle">
-                <thead>
-                  <tr className="text-muted small">
-                    <th>Billing Type</th>
-                    <th>Account Holder</th>
-                    <th>Entry Month</th>
-                    <th className="text-center">Items</th>
-                    <th className="text-end">Total Bill Amount</th>
+            <div className="table-responsive border-0" style={{ overflowX: 'auto' }}>
+              <table className="table table-hover align-middle mb-0" style={{ minWidth: window.innerWidth < 768 ? '850px' : 'auto' }}>
+                <thead className="table-dark">
+                  <tr className="smaller text-uppercase fw-black bg-dark">
+                    <th className="py-3 ps-4" style={{ width: '180px' }}>Category</th>
+                    <th className="py-3">Period</th>
+                    <th className="py-3">Account Holder</th>
+                    <th className="text-center py-3">Entries</th>
+                    <th className="text-center py-3">Status</th>
+                    <th className="text-center py-3">Total weight</th>
+                    <th className="text-end pe-4 py-3">Final Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.values([...sales, ...purchases].reduce((acc, item) => {
                     const key = `${item.recordMonth}-${item.vendorName || item.supplierName}`;
+                    const status = (item.status || "PENDING").toUpperCase();
+
                     if (!acc[key]) {
                       acc[key] = {
                         name: item.vendorName || item.supplierName,
                         month: item.recordMonth,
                         amount: 0,
-                        count: 0, type: item.saleDate ? 'SALE' : 'PURCHASE',
+                        weight: 0,
+                        count: 0,
+                        type: item.saleDate ? 'SALE' : 'PURCHASE',
                         partnerId: item.vendorId || item.supplierId,
-                        date: new Date(item.saleDate || item.purchaseDate)
+                        date: new Date(item.saleDate || item.purchaseDate),
+                        statuses: []
                       };
                     }
                     acc[key].amount += item.amount;
+                    acc[key].weight += (parseFloat(item.weight) || 0);
                     acc[key].count += 1;
+                    acc[key].statuses.push(status);
                     return acc;
-                  }, {}))
+                  }, {})).map(bill => {
+                    // Aggregate Status Logic
+                    const unique = [...new Set(bill.statuses)];
+                    let finalStatus = "PENDING";
+                    if (unique.length === 1 && unique[0] === "PAID") finalStatus = "PAID";
+                    else if (unique.includes("PAID") || unique.includes("PARTIAL")) finalStatus = "PARTIAL";
+
+                    return { ...bill, finalStatus };
+                  })
                     .sort((a, b) => b.date - a.date)
-                    .slice(0, 5)
+                    .slice(0, 8)
                     .map((bill, idx) => (
-                      <tr key={idx} className="cursor-pointer" onClick={() => navigate(`/bill-details/${bill.type.toLowerCase() === 'sale' ? 'sales' : 'purchase'}/${bill.partnerId}/${bill.month}`)}>
-                        <td>
-                          <span className={`badge ${bill.type === 'SALE' ? 'bg-success' : 'bg-danger'} bg-opacity-10 text-${bill.type === 'SALE' ? 'success' : 'danger'} px-2 py-1`}>
-                            {bill.type === 'SALE' ? 'Invoiced' : 'Purchased'}
+                      <tr key={idx} className="cursor-pointer border-bottom border-light" onClick={() => navigate(`/bill-details/${bill.type.toLowerCase() === 'sale' ? 'sales' : 'purchase'}/${bill.partnerId}/${bill.month}`)}>
+                        <td className="py-3 ps-4">
+                          <div className={`badge rounded-pill px-3 py-2 fw-black text-uppercase tracking-tighter d-flex align-items-center gap-2 w-fit ${bill.type === 'SALE' ? 'bg-success text-white' : 'bg-danger text-white'}`} style={{ fontSize: '0.65rem' }}>
+                            {bill.type === 'SALE' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                            {bill.type === 'SALE' ? 'Sales Account' : 'Suppliers Account'}
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="fw-bold text-dark fs-6">{bill.month}</div>
+                          <small className="text-muted smaller">Voucher Period</small>
+                        </td>
+                        <td className="py-3">
+                          <div className="fw-bold text-dark text-capitalize">{bill.name}</div>
+                          <small className="text-muted smaller">Account Holder</small>
+                        </td>
+                        <td className="text-center py-3">
+                          <div className="badge bg-light text-dark border rounded-pill px-2 py-1 smaller fw-bold">{bill.count} Records</div>
+                        </td>
+                        <td className="text-center py-3">
+                          <span className={`badge rounded-pill px-3 py-2 smaller shadow-sm fw-bold ${bill.finalStatus === 'PAID' ? 'bg-soft-success text-success' : bill.finalStatus === 'PARTIAL' ? 'bg-soft-warning text-warning' : 'bg-soft-danger text-danger'}`}>
+                            {bill.finalStatus}
                           </span>
                         </td>
-                        <td className="fw-bold small">{bill.name}</td>
-                        <td className="text-muted small">{bill.month}</td>
-                        <td className="text-center small">{bill.count} Categories</td>
-                        <td className={`text-end fw-bold ${bill.type === 'SALE' ? 'text-success' : 'text-danger'}`}>
+                        <td className="text-center py-3">
+                          <div className="fw-bold text-dark">{bill.weight.toFixed(2)} <small className="small opacity-50">kg</small></div>
+                        </td>
+                        <td className={`text-end pe-4 py-3 fw-bold fs-5 ${bill.type === 'SALE' ? 'text-success' : 'text-danger'}`}>
                           ₹{bill.amount.toLocaleString()}
                         </td>
                       </tr>

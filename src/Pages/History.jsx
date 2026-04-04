@@ -79,17 +79,25 @@ export default function History() {
         totalWeight: 0,
         totalAmount: 0,
         latestDate: item.purchaseDate || item.saleDate,
-        itemsCount: 0
+        itemsCount: 0,
+        statuses: []
       };
     }
     acc[key].totalWeight += item.weight;
     acc[key].totalAmount += item.amount;
     acc[key].itemsCount += 1;
+    acc[key].statuses.push((item.status || "PENDING").toUpperCase());
     const itemDate = new Date(item.purchaseDate || item.saleDate);
     if (itemDate > new Date(acc[key].latestDate)) acc[key].latestDate = item.purchaseDate || item.saleDate;
     
     return acc;
-  }, {})).sort((a, b) => new Date(b.latestDate) - new Date(a.latestDate));
+  }, {})).map(bill => {
+      const unique = [...new Set(bill.statuses)];
+      let finalStatus = "PENDING";
+      if (unique.length === 1 && unique[0] === "PAID") finalStatus = "PAID";
+      else if (unique.includes("PAID") || unique.includes("PARTIAL")) finalStatus = "PARTIAL";
+      return { ...bill, finalStatus };
+  }).sort((a, b) => new Date(b.latestDate) - new Date(a.latestDate));
 
   const handleRowClick = (bill) => {
      navigate(`/bill-details/${bill.type.toLowerCase()}/${bill.partnerId}/${bill.recordMonth}`);
@@ -148,52 +156,53 @@ export default function History() {
         </div>
       </div>
 
-      {/* DATA GRID */}
-      <div className="card shadow border-0 overflow-hidden">
-        <div className="table-responsive">
+      <div className="card shadow-sm border-0 overflow-hidden bg-transparent">
+        {/* DESKTOP TABLE */}
+        <div className="table-responsive d-none d-lg-block bg-white rounded-4 shadow-sm border overflow-hidden">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-dark">
-              <tr>
-                <th className="ps-4">Category</th>
-                <th>Billing Period</th>
-                <th>Account Holder</th>
-                <th className="text-center">Voucher Entries</th>
-                <th className="text-center">Total Weight</th>
-                <th className="text-end pe-4">Final Amount</th>
+              <tr className="smaller text-uppercase fw-bold bg-dark">
+                <th className="ps-4 py-3">Category</th>
+                <th className="py-3">Billing Period</th>
+                <th className="py-3">Account Holder</th>
+                <th className="text-center py-3">Voucher Entries</th>
+                <th className="text-center py-3">Payment Status</th>
+                <th className="text-center py-3">Total Weight</th>
+                <th className="text-end pe-4 py-3">Final Amount</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" className="text-center py-5">
+                <tr><td colSpan="7" className="text-center py-5">
                    <div className="spinner-border text-primary" role="status"></div>
                 </td></tr>
               ) : groupedBillHistory.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-5 text-muted fst-italic">No records match your filters.</td></tr>
+                <tr><td colSpan="7" className="text-center py-5 text-muted fst-italic">No records match your filters.</td></tr>
               ) : (
                 groupedBillHistory.map((bill, idx) => (
-                  <tr key={idx} className="cursor-pointer" onClick={() => handleRowClick(bill)} title="Click to view detailed vouchers">
-                    <td className="ps-4">
-                      {bill.type === "PURCHASE" ? (
-                        <span className="badge bg-danger text-white px-3 py-2 d-flex align-items-center gap-2 w-fit">
-                          <ArrowDownCircle size={14} /> Suppliers Account
-                        </span>
-                      ) : (
-                        <span className="badge bg-success text-white px-3 py-2 d-flex align-items-center gap-2 w-fit">
-                          <ArrowUpCircle size={14} /> Sales Account
-                        </span>
-                      )}
+                  <tr key={idx} className="cursor-pointer border-bottom border-light" onClick={() => handleRowClick(bill)} title="Click to view detailed vouchers">
+                    <td className="ps-4 py-3">
+                      <div className={`badge rounded-pill px-3 py-2 fw-black text-uppercase tracking-tighter d-flex align-items-center gap-1 w-fit ${bill.type === 'PURCHASE' ? 'bg-danger' : 'bg-success'}`} style={{ fontSize: '0.6rem' }}>
+                         {bill.type === 'PURCHASE' ? <ArrowDownCircle size={12}/> : <ArrowUpCircle size={12}/>}
+                         {bill.type === "PURCHASE" ? "Suppliers Account" : "Sales Account"}
+                      </div>
                     </td>
                     <td>
-                      <span className="fw-bold text-dark">{formatMonthName(bill.recordMonth)}</span>
+                      <span className="fw-bold text-dark smaller">{formatMonthName(bill.recordMonth)}</span>
                     </td>
                     <td>
-                      <div className="fw-bold text-dark fs-6">{bill.partnerName}</div>
-                      <small className="text-muted">Last entry: {new Date(bill.latestDate).toLocaleDateString()}</small>
+                      <div className="fw-bold text-dark smaller">{bill.partnerName}</div>
+                      <small className="text-muted smaller opacity-75">Last: {new Date(bill.latestDate).toLocaleDateString()}</small>
                     </td>
                     <td className="text-center">
-                      <span className="badge rounded-pill bg-light text-dark border px-3">{bill.itemsCount} Records</span>
+                      <span className="badge rounded-pill bg-light text-dark border px-2 py-1 smaller">{bill.itemsCount} Records</span>
                     </td>
-                    <td className="text-center fw-bold">{bill.totalWeight.toFixed(2)} kg</td>
+                    <td className="text-center">
+                        <span className={`badge rounded-pill smaller px-3 py-2 fw-bold ${bill.finalStatus === 'PAID' ? 'bg-soft-success text-success' : bill.finalStatus === 'PARTIAL' ? 'bg-soft-warning text-warning' : 'bg-soft-danger text-danger'}`}>
+                            {bill.finalStatus}
+                        </span>
+                    </td>
+                    <td className="text-center fw-bold smaller">{bill.totalWeight.toFixed(2)} kg</td>
                     <td className="text-end pe-4">
                       <div className={`fw-bold fs-5 ${bill.type === "PURCHASE" ? "text-danger" : "text-success"}`}>
                         ₹{bill.totalAmount.toLocaleString()}
@@ -205,7 +214,53 @@ export default function History() {
             </tbody>
           </table>
         </div>
+
+        {/* MOBILE VIEW cards */}
+        <div className="d-lg-none d-flex flex-column gap-2">
+            {loading ? (
+                <div className="text-center py-5 bg-white rounded-3 shadow-sm border"><div className="spinner-border text-primary" role="status"></div></div>
+            ) : groupedBillHistory.length === 0 ? (
+                <div className="text-center py-5 text-muted fst-italic bg-white rounded-3 shadow-sm border">No records match your filters.</div>
+            ) : (
+                groupedBillHistory.map((bill, idx) => (
+                    <div key={idx} className="bg-white p-3 rounded-4 shadow-sm border cursor-pointer border-start" onClick={() => handleRowClick(bill)} style={{ borderLeftWidth: '5px !important', borderLeftColor: `${bill.type === 'PURCHASE' ? '#ef4444' : '#10b981'} !important` }}>
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div className={`badge rounded-pill px-2 py-1 fw-bold text-uppercase tracking-tighter mb-1 ${bill.type === 'PURCHASE' ? 'bg-soft-danger text-danger' : 'bg-soft-success text-success'}`} style={{ fontSize: '0.6rem' }}>
+                                    {bill.type === "PURCHASE" ? "Supplier" : "Vendor"}
+                                </div>
+                                <h6 className="fw-black text-dark mb-0 fs-5">{bill.partnerName}</h6>
+                                <div className="smaller text-muted opacity-75">{formatMonthName(bill.recordMonth)}</div>
+                            </div>
+                            <div className="text-end">
+                                <div className={`fw-black fs-4 ${bill.type === 'PURCHASE' ? 'text-danger' : 'text-success'}`}>₹{bill.totalAmount.toLocaleString()}</div>
+                                <span className={`badge rounded-pill smaller px-2 py-1 fw-bold ${bill.finalStatus === 'PAID' ? 'bg-soft-success text-success' : bill.finalStatus === 'PARTIAL' ? 'bg-soft-warning text-warning' : 'bg-soft-danger text-danger'}`}>
+                                    {bill.finalStatus}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <div className="smaller text-muted d-flex align-items-center gap-1">
+                                <span className="bg-light px-2 py-1 rounded-pill">{bill.itemsCount} Logs</span>
+                                <span>• {bill.totalWeight.toFixed(2)} kg</span>
+                            </div>
+                            <small className="text-muted opacity-75 smaller">Last activity: {new Date(bill.latestDate).toLocaleDateString('en-IN', {day: '2-digit', month: 'short'})}</small>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
       </div>
+
+      <style>{`
+          .smaller { font-size: 0.75rem !important; }
+          .bg-soft-success { background-color: #dcfce7; }
+          .bg-soft-warning { background-color: #fef9c3; }
+          .bg-soft-danger { background-color: #fee2e2; }
+          .fw-black { font-weight: 900 !important; }
+          .w-fit { width: fit-content; }
+          .tracking-tighter { letter-spacing: -0.02em; }
+      `}</style>
 
       {!loading && filteredHistory.length > 0 && (
           <div className="mt-4 row g-3">
