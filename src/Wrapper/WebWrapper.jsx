@@ -50,10 +50,10 @@ export default function WebWrapper() {
     { name: "Intake", path: "/purchase", icon: <ShoppingCart size={18} /> },
     { name: "Production", path: "/production", icon: <Zap size={18} /> },
     { name: "Sales", path: "/sales", icon: <TrendingUp size={18} /> },
+    { name: "History", path: "/history", icon: <History size={18} /> },
     { name: "Clients", path: "/accounts", icon: <Users size={18} /> },
     { name: "Materials", path: "/materials", icon: <Box size={18} /> },
     { name: "Rates", path: "/settings", icon: <Settings size={18} /> },
-    { name: "History", path: "/history", icon: <History size={18} /> },
   ];
 
   const bottomNavLinks = [

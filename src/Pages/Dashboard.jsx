@@ -16,6 +16,10 @@ export default function Dashboard() {
   const [production, setProduction] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [isNotificationActive, setIsNotificationActive] = useState(
+    "Notification" in window && Notification.permission === "granted"
+  );
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -202,18 +206,68 @@ export default function Dashboard() {
               <h5 className="fw-bold mb-1 text-dark smaller-md">Weekly Strategy: Upcoming Stock Collections</h5>
               <p className="mb-2 text-muted smaller opacity-75">Scheduled for collection within the next 7 days:</p>
               <div className="d-flex flex-wrap gap-2">
-                {upcomingCollections.map(s => (
-                  <div key={s.id} className="badge bg-light text-dark border px-2 px-md-3 py-2 rounded-pill d-flex align-items-center gap-2">
-                    <span className={`p-1 rounded-circle ${s.collectionDate === todayDay ? 'bg-danger' : 'bg-success'}`} style={{ width: 8, height: 8 }}></span>
-                    <span className="smaller">{s.name}</span> <span className="text-muted fw-normal smaller-xs">Day {s.collectionDate}</span>
-                  </div>
-                ))}
+                {upcomingCollections.map(s => {
+                  const today = new Date();
+                  const currentMonth = today.getMonth();
+                  const currentYear = today.getFullYear();
+
+                  // Logic: If the collection day is less than today's day, it's in the next month
+                  let targetMonth = currentMonth;
+                  if (s.collectionDate < today.getDate()) {
+                    targetMonth += 1;
+                  }
+
+                  const targetDate = new Date(currentYear, targetMonth, s.collectionDate);
+                  const formattedDate = targetDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+                  return (
+                    <div key={s.id} className="badge bg-light text-dark border px-2 px-md-3 py-2 rounded-pill d-flex align-items-center gap-2">
+                      <span className={`p-1 rounded-circle ${s.collectionDate === todayDay ? 'bg-danger' : 'bg-success'}`} style={{ width: 8, height: 8 }}></span>
+                      <span className="smaller">{s.name}</span> <span className="text-muted fw-bold smaller-xs">{formattedDate}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
-          {/* <button className="btn btn-dark btn-sm fw-bold px-4 py-2 w-100 w-md-auto d-flex align-items-center justify-content-center gap-2 shadow-sm rounded-pill" onClick={() => navigate('/accounts')}>
-            Manage Procurement <ArrowRight size={16} />
-          </button> */}
+          <div className="d-flex flex-column align-items-md-end gap-2 w-100 w-md-auto mt-2 mt-md-0">
+            <div className="form-check form-switch bg-light px-3 py-1 py-md-2 rounded-pill border d-flex align-items-center gap-2 shadow-sm">
+              <label className="form-check-label smaller-xs fw-black text-dark text-uppercase tracking-widest cursor-pointer m-0" htmlFor="alertToggle" style={{ fontSize: '0.6rem' }}>
+                Stay Notified
+              </label>
+              <input
+                className="form-check-input cursor-pointer m-0"
+                type="checkbox"
+                id="alertToggle"
+                checked={isNotificationActive}
+                onChange={async (e) => {
+                  if (!("Notification" in window)) {
+                    toast.error("Notifications not supported");
+                    return;
+                  }
+
+                  if (e.target.checked) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                      setIsNotificationActive(true);
+                      toast.success("Mobile Alerts Active");
+                      new Notification("Hafiz JI Registry", {
+                        body: "Notifications are now synchronized with your mobile panel.",
+                        icon: "/logo.png"
+                      });
+                    } else {
+                      setIsNotificationActive(false);
+                      toast.error("Permission was not granted");
+                    }
+                  } else {
+                    setIsNotificationActive(false);
+                    toast.error("Mute alerts via browser settings");
+                  }
+                }}
+                style={{ width: '40px', height: '20px' }}
+              />
+            </div>
+          </div>
         </div>
       )}
 
